@@ -11,12 +11,36 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Start services
-        run: docker-compose up -d
+        run: |
+          docker compose build
+          docker compose up -d
       - name: Wait for services
         run: |
           sleep 30
           curl -f http://localhost:8000/health || exit 1
           curl -f http://localhost:3000 || exit 1
-      - name: Logs on failure
+      - name: Check service health
+        run: |
+          # Check that all services are running
+          docker compose ps
+
+          # Verify no containers have exited
+          if docker compose ps | grep -q "Exit"; then
+            echo "Some containers have exited:"
+            docker compose ps
+            echo "Container logs:"
+            docker compose logs
+            exit 1
+          fi
+      - name: Show container logs on failure
         if: failure()
-        run: docker-compose logs
+        run: |
+          echo "=== Container Status ==="
+          docker compose ps
+          echo "=== Container Logs ==="
+          docker compose logs
+      - name: Cleanup
+        if: always()
+        run: |
+          docker compose down -v
+          docker compose rm -f
