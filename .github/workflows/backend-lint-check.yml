@@ -1,6 +1,7 @@
 name: Backend Lint Check
 
 on:
+  workflow_dispatch:
   pull_request:
     branches: [main]
     paths:
