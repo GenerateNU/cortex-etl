@@ -1,10 +1,11 @@
 """Initial tables
 
 Revision ID: 001
-Revises: 
+Revises:
 Create Date: 2025-09-09
 
 """
+
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
