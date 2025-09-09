@@ -1,0 +1,22 @@
+name: Frontend Prettier Check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "frontend/**"
+
+jobs:
+  prettier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+      - name: Check formatting
+        run: |
+          cd frontend
+          npm ci
+          npm install -D prettier
+          npx prettier --check "**/*.{js,jsx,ts,tsx,json,css,md}"

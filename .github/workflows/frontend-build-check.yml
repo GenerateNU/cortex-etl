@@ -1,0 +1,21 @@
+name: Frontend Build Check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "frontend/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+      - name: Build
+        run: |
+          cd frontend
+          npm ci
+          npm run build

@@ -1,0 +1,23 @@
+name: Backend Lint Check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "backend/**"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Lint
+        run: |
+          cd backend
+          pip install black flake8 isort
+          black --check .
+          flake8 .
+          isort --check-only .

@@ -1,0 +1,21 @@
+name: Frontend Lint Check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "frontend/**"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+      - name: Install and lint
+        run: |
+          cd frontend
+          npm ci
+          npm run lint
