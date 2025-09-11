@@ -1,6 +1,6 @@
 # Cortex ETL System - Source Code
 
-Private repository containing source code for the Cortex multi-tenant ETL system.
+Repository containing source code for the Cortex multi-tenant ETL system.
 
 ## Architecture
 
