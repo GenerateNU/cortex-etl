@@ -1,29 +1,83 @@
 from app.core.supabase import supabase
+import httpx
 import logging
 import os
 
-WEBHOOK_CONFIG = {
+# Storage webhooks (handled by Supabase Management API)
+STORAGE_WEBHOOKS = {
     "pdf_extraction": {
-        "table": "storage.objects",
-        "event": "INSERT",
-        "condition": "NEW.name LIKE '%.pdf'",
+        "filter": "storage/objects/create",
         "endpoint": "/webhook/extract-pdf",
+        "condition": lambda obj: obj.get("name", "").endswith(".pdf"),
     },
-    # Add more webhooks here as needed
+    # Add more storage webhooks here:
     # "csv_upload": {
-    #     "table": "storage.objects",
-    #     "event": "INSERT",
-    #     "condition": "NEW.name LIKE '%.csv'",
-    #     "endpoint": "/webhook/process-csv"
+    #     "filter": "storage/objects/create",
+    #     "endpoint": "/webhook/process-csv",
+    #     "condition": lambda obj: obj.get("name", "").endswith('.csv')
+    # }
+}
+
+# Database webhooks (custom triggers on public tables)
+DATABASE_WEBHOOKS = {
+    # Add database webhooks here:
+    # "tenant_update": {
+    #     "table": "public.tenants",
+    #     "event": "UPDATE",
+    #     "condition": "NEW.is_active != OLD.is_active",
+    #     "endpoint": "/webhook/tenant-changed"
     # }
 }
 
 
 async def sync_webhooks():
-    """Create database triggers for webhooks"""
-    backend_url = os.getenv("BACKEND_URL", "http://host.docker.internal:8001")
+    """Sync both storage and database webhooks"""
+    await sync_storage_webhooks()
+    await sync_database_webhooks()
 
-    for name, config in WEBHOOK_CONFIG.items():
+
+async def sync_storage_webhooks():
+    """Create storage webhooks via Supabase Management API"""
+    webhook_base_url = os.getenv(
+        "BACKEND_WEBHOOK_URL", "http://host.docker.internal:8000"
+    )
+    supabase_url = os.getenv("SUPABASE_URL")
+    service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+
+    for name, config in STORAGE_WEBHOOKS.items():
+        webhook_config = {
+            "type": "HTTP",
+            "filter": config["filter"],
+            "config": {
+                "url": f"{webhook_base_url}{config['endpoint']}",
+                "method": "POST",
+                "headers": {"Content-Type": "application/json"},
+            },
+        }
+
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"{supabase_url}/rest/v1/hooks",
+                    json=webhook_config,
+                    headers={
+                        "Authorization": f"Bearer {service_key}",
+                        "Content-Type": "application/json",
+                    },
+                )
+                if response.status_code in [200, 201]:
+                    logging.info(f"Storage webhook {name} synced")
+                else:
+                    logging.error(f"Storage webhook {name} failed: {response.text}")
+        except Exception as e:
+            logging.error(f"Storage webhook {name} sync failed: {e}")
+
+
+async def sync_database_webhooks():
+    """Create database triggers for webhooks"""
+    backend_url = os.getenv("BACKEND_WEBHOOK_URL", "http://host.docker.internal:8000")
+
+    for name, config in DATABASE_WEBHOOKS.items():
         trigger_sql = f"""
         CREATE OR REPLACE FUNCTION webhook_{name}()
         RETURNS TRIGGER AS $$
@@ -49,7 +103,7 @@ async def sync_webhooks():
         """
 
         try:
-            await supabase.rpc("exec_sql", {"sql": trigger_sql}).execute()
-            logging.info(f"Webhook {name} synced")
+            supabase.rpc("exec_sql", {"sql": trigger_sql}).execute()
+            logging.info(f"Database webhook {name} synced")
         except Exception as e:
-            logging.error(f"Webhook {name} sync failed: {e}")
+            logging.error(f"Database webhook {name} sync failed: {e}")
