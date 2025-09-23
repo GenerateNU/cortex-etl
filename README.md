@@ -1,108 +1,78 @@
-# Cortex ETL System - Source Code
+# Cortex ETL System
 
-Private repository containing source code for the Cortex multi-tenant ETL system.
+Automated knowledge base creation system for manufacturing CPQ systems. Processes multi-format data (CSV, PDF, APIs) into structured, queryable databases with complete tenant isolation.
 
 ## Architecture
 
-- **Backend**: FastAPI for ETL processing and API
-- **Frontend**: Next.js for upload/management interface
-- **Database**: PostgreSQL with schema-per-tenant isolation
-- **Storage**: MinIO (local) / S3 (production)
+- **Backend**: FastAPI for ETL processing and webhook handling
+- **Frontend**: Next.js for tenant/admin interfaces
+- **Database**: PostgreSQL with schema-per-tenant isolation via Supabase
+- **Development**: Local Supabase stack via Docker
+- **Production**: Supabase Cloud + AWS ECS Fargate
 
-## Development Setup
+## Quick Start
 
 ### Prerequisites
 
 - Docker Desktop
-- Python 3.11+
 - Node.js 18+
-- VS Code (recommended)
 
-### Initial Setup
+### Development Setup
 
-1. **Clone the Repository**
+```bash
+# Clone and start everything
+git clone https://github.com/GenerateNU/cortex-etl-source.git
+cd cortex-etl-source
+npm run dev:fresh
+```
 
-   ```bash
-   git clone https://github.com/GenerateNU/cortex-etl-source.git
-   cd cortex-etl-source
-   ```
+This single command:
 
-2. **Copy the Example Environment Files**
-
-   ```bash
-   cp backend/.env.local.example backend/.env.local
-   cp frontend/.env.local.example frontend/.env.local
-   ```
-
-3. **Start the Docker Compose Stack**
-
-   ```bash
-   docker-compose up
-   ```
-
-4. **Set up backend linting (one-time)**
-
-   ```bash
-   cd backend
-   python -m venv .venv
-   .venv\Scripts\activate  # Windows
-   source .venv/bin/activate  # Mac/Linux
-   pip install -r requirements-dev.txt
-   ```
-
-5. **Set up pre-commit hooks (one-time)**
-   ```bash
-   pre-commit install
-   ```
+- Generates all environment variables
+- Starts local Supabase stack
+- Builds and runs frontend/backend containers
 
 ### Access Points
 
-- Frontend: http://localhost:3000
-- API: http://localhost:8000
-- MinIO: http://localhost:9001 (minioadmin/minioadmin)
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8001
+- **Supabase Studio**: http://localhost:3001
+- **Supabase API**: http://localhost:8000
 
-## Code Quality
-
-### Linting Commands
-
-**Frontend:**
+## Available Commands
 
 ```bash
-cd frontend
-npm run lint       # Check for issues
-npm run lint:fix   # Auto-fix issues
-npm run format     # Prettier formatting
+npm run dev:fresh    # Clean start (regenerates environment variables and cleans up containers)
+npm run dev         # Start containers
+npm run dev:build   # Start and build containers
+npm run docker:clean   # Clean up containers and volumes
+npm run dev:stop    # Stop all containers
+npm run dev:logs    # View container logs
 ```
 
-**Backend:**
+## Project Structure
 
-```bash
-cd backend
-.venv\Scripts\activate  # Activate virtual environment first
-black .           # Format Python code
-flake8 .          # Check style issues
-isort .           # Sort imports
+```
+├── frontend/           # Next.js tenant interface
+├── backend/           # FastAPI ETL processing
+├── docker-compose.yml # Application containers
+├── docker-compose.supabase.yml # Local Supabase stack
+└── init-dev.js       # Environment generator
 ```
 
-### VS Code Extensions
+## Production Deployment
 
-Install for auto-formatting on save:
+Uses Terraform for AWS infrastructure:
 
-- Prettier
-- ESLint
-- Black Formatter
+- ECS Fargate for containers
+- Supabase Cloud for database/auth
+- Route53 + ALB for routing
 
-### Pre-commit
+See `terraform/` directory for infrastructure code.
 
-```bash
-pre-commit run --all-files  # Run all checks manually
-```
+## Key Features
 
-### Testing Credentials
-
-- Admin: admin@cortex.com / password
-- Tenant user: user@example.com / password
-
-## Deployment
-
-Production images are built and pushed to AWS ECR via GitHub Actions on main branch commits.
+- **Multi-tenant isolation**: Schema-per-tenant with Row Level Security
+- **Automated data processing**: PDF extraction, LLM enrichment, pattern recognition
+- **Zero-config development**: Single command setup
+- **Production-ready**: Terraform infrastructure included
