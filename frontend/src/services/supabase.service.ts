@@ -19,11 +19,13 @@ export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKe
 
 export const authService = {
   async signIn(email: string, password: string) {
+    console.log("Signing in...")
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
     if (error) throw error
+    console.log("Signed in!")
     return data
   },
 
@@ -38,13 +40,17 @@ export const authService = {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('tenant_id, role')
+      .select('first_name, last_name, role, tenant_id')
       .eq('id', user.id)
       .single()
+
+    console.log(profile)
 
     return {
       id: user.id,
       email: user.email!,
+      first_name: profile?.first_name || '',
+      last_name: profile?.last_name || '',
       tenant_id: profile?.tenant_id || null,
       role: profile?.role || 'tenant',
     }

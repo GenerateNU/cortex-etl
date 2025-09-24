@@ -16,6 +16,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (credentials: LoginForm) => {
     await authService.signIn(credentials.email, credentials.password)
+    // User state will be updated via the auth state change listener
   }
 
   const logout = async () => {
@@ -44,6 +45,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (user?.tenant_id) {
         const tenant = await tenantService.getTenant(user.tenant_id)
         setCurrentTenant(tenant)
+      } else {
+        setCurrentTenant(null)
       }
     })
 

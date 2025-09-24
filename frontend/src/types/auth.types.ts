@@ -8,6 +8,8 @@ export interface Tenant {
 export interface User {
   id: string
   email: string
+  first_name: string
+  last_name: string
   tenant_id: string | null // Current tenant: fixed for tenant users, selected for admins
   role: 'tenant' | 'admin'
 }

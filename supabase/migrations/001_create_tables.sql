@@ -12,6 +12,8 @@ CREATE TYPE user_role AS ENUM ('tenant', 'admin');
 -- Create profiles table
 CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID REFERENCES auth.users ON DELETE CASCADE,
+    first_name TEXT,
+    last_name TEXT,
     role user_role NOT NULL DEFAULT 'tenant',
     tenant_id UUID REFERENCES public.tenants(id),
     created_at TIMESTAMPTZ DEFAULT NOW(),

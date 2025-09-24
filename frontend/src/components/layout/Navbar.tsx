@@ -28,6 +28,14 @@ export function Navbar() {
     setShowTenantDropdown(false)
   }
 
+  // Helper function to get display name
+  const getDisplayName = () => {
+    if (!user) return ''
+
+    const fullName = `${user.first_name} ${user.last_name}`.trim()
+    return fullName || user.email
+  }
+
   if (!user) return null
 
   return (
@@ -109,7 +117,7 @@ export function Navbar() {
             )}
 
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-slate-400">{user.email}</span>
+              <span className="text-sm text-slate-400">{getDisplayName()}</span>
               <button
                 onClick={handleLogout}
                 className="text-sm text-slate-400 hover:text-slate-300 transition-colors"

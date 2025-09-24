@@ -42,11 +42,23 @@ async def seed_database():
 
     print("Creating profiles...", flush=True)
     supabase.table("profiles").insert(
-        {"id": admin_user.user.id, "role": "admin", "tenant_id": None}
+        {
+            "id": admin_user.user.id,
+            "first_name": "Admin",
+            "last_name": "User",
+            "role": "admin",
+            "tenant_id": None,
+        }
     ).execute()
 
     supabase.table("profiles").insert(
-        {"id": tenant_user.user.id, "role": "tenant", "tenant_id": tenant_id}
+        {
+            "id": tenant_user.user.id,
+            "first_name": "Tenant",
+            "last_name": "User",
+            "role": "tenant",
+            "tenant_id": tenant_id,
+        }
     ).execute()
 
     print("Database seeded successfully", flush=True)
