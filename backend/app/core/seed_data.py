@@ -1,67 +1,55 @@
 from app.core.supabase import supabase
-import logging
-import asyncio
-
-
-async def create_user_with_retry(user_data, max_retries=50):
-    for attempt in range(max_retries):
-        try:
-            return supabase.auth.admin.create_user(user_data)
-        except Exception as e:
-            if "already registered" in str(e):
-                logging.info(f"User {user_data['email']} already exists")
-                return None
-            if attempt == max_retries - 1:
-                raise
-            logging.info(f"Auth retry {attempt + 1}/{max_retries}: {e}")
-            await asyncio.sleep(3)
 
 
 async def seed_database():
     # Check if already seeded
     existing = supabase.table("tenants").select("count", count="exact").execute()
     if existing.count > 0:
-        logging.info("Database already seeded")
+        print("Database already seeded", flush=True)
+        print("Login credentials:", flush=True)
+        print("Admin: admin@cortex.com / password", flush=True)
+        print("Tenant: user@example.com / password", flush=True)
         return
 
-    # Create tenant
+    print("Creating tenant...", flush=True)
     tenant = (
         supabase.table("tenants")
         .insert({"name": "Example Corp", "is_active": True})
         .execute()
     )
+    tenant_id = tenant.data[0]["id"]
+    print(f"Created tenant: {tenant_id}", flush=True)
 
-    # Create users with retry
-    await create_user_with_retry(
+    print("Creating admin user...", flush=True)
+    admin_user = supabase.auth.admin.create_user(
         {
             "email": "admin@cortex.com",
             "password": "password",
-            "user_metadata": {"role": "admin"},
+            "email_confirm": True,  # Skip email confirmation
         }
     )
+    print(f"Created admin user: {admin_user.user.id}", flush=True)
 
-    await create_user_with_retry(
+    print("Creating tenant user...", flush=True)
+    tenant_user = supabase.auth.admin.create_user(
         {
             "email": "user@example.com",
             "password": "password",
-            "user_metadata": {"role": "tenant", "tenant_id": tenant.data[0]["id"]},
+            "email_confirm": True,  # Skip email confirmation
         }
     )
+    print(f"Created tenant user: {tenant_user.user.id}", flush=True)
 
-    logging.info("Database seeded successfully")
+    print("Creating profiles...", flush=True)
+    supabase.table("profiles").insert(
+        {"id": admin_user.user.id, "role": "admin", "tenant_id": None}
+    ).execute()
 
+    supabase.table("profiles").insert(
+        {"id": tenant_user.user.id, "role": "tenant", "tenant_id": tenant_id}
+    ).execute()
 
-async def wait_for_auth_service():
-    max_retries = 20  # Increase from 10
-    for attempt in range(max_retries):
-        try:
-            supabase.auth.admin.list_users()
-            logging.info("Auth service ready")
-            return
-        except Exception as e:
-            if attempt == max_retries - 1:
-                raise Exception(
-                    f"Auth service not ready after {max_retries} attempts: {e}"
-                )
-            logging.info(f"Waiting for auth service... ({attempt + 1}/{max_retries})")
-            await asyncio.sleep(3)  # Increase from 2
+    print("Database seeded successfully", flush=True)
+    print("Login credentials:", flush=True)
+    print("Admin: admin@cortex.com / password", flush=True)
+    print("Tenant: user@example.com / password", flush=True)

@@ -1,6 +1,5 @@
 from app.core.supabase import supabase
 import httpx
-import logging
 import os
 
 # Storage webhooks (handled by Supabase Management API)
@@ -66,11 +65,11 @@ async def sync_storage_webhooks():
                     },
                 )
                 if response.status_code in [200, 201]:
-                    logging.info(f"Storage webhook {name} synced")
+                    print(f"Storage webhook {name} synced", flush=True)
                 else:
-                    logging.error(f"Storage webhook {name} failed: {response.text}")
+                    print(f"Storage webhook {name} failed: {response.text}", flush=True)
         except Exception as e:
-            logging.error(f"Storage webhook {name} sync failed: {e}")
+            print(f"Storage webhook {name} sync failed: {e}", flush=True)
 
 
 async def sync_database_webhooks():
@@ -104,6 +103,6 @@ async def sync_database_webhooks():
 
         try:
             supabase.rpc("exec_sql", {"sql": trigger_sql}).execute()
-            logging.info(f"Database webhook {name} synced")
+            print(f"Database webhook {name} synced", flush=True)
         except Exception as e:
-            logging.error(f"Database webhook {name} sync failed: {e}")
+            print(f"Database webhook {name} sync failed: {e}", flush=True)

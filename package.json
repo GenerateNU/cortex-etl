@@ -11,9 +11,9 @@
         "dev:stop": "docker-compose down && npm run supabase:stop",
         "dev:logs": "docker-compose logs -f",
         "docker:clean": "npx supabase stop --no-backup && docker-compose down -v && docker container prune -f && docker network prune -f",
-        "dev:fresh": "npm run docker:clean && npm run dev:build"
+        "fresh": "npm run docker:clean && npm run dev:build"
     },
     "devDependencies": {
-        "supabase": "^2.40.7"
+        "supabase": "^2.45.5"
     }
 }

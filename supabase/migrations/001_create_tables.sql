@@ -18,5 +18,14 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     PRIMARY KEY (id)
 );
 
+CREATE TABLE IF NOT EXISTS file_uploads (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    storage_object_id UUID,
+    name TEXT NOT NULL,
+    bucket_id TEXT NOT NULL,
+    tenant_id UUID REFERENCES tenants(id),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Enable extensions
 CREATE EXTENSION IF NOT EXISTS http WITH SCHEMA extensions;
