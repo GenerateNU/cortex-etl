@@ -72,7 +72,7 @@ export function LoginForm() {
                   setFormData(prev => ({ ...prev, email: e.target.value }))
                 }
                 error={fieldErrors.email}
-                placeholder="example@email.com"
+                placeholder="Enter your email"
               />
 
               <Input

@@ -32,7 +32,8 @@ export function useDeleteFile() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: fileService.deleteFile,
+    mutationFn: ({ fileId, filePath }: { fileId: string; filePath: string }) =>
+      fileService.deleteFile(filePath, fileId),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [...QUERY_KEYS.FILES, user?.tenant_id],

@@ -14,16 +14,16 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen px-4">
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 modal-backdrop"
+          className="fixed inset-0 bg-black bg-opacity-50"
           onClick={onClose}
         />
 
-        <div className="bg-white rounded-lg shadow-xl max-w-md w-full z-10">
-          <div className="flex items-center justify-between p-4 border-b">
-            <h3 className="text-lg font-medium text-gray-900">{title}</h3>
+        <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full z-10 border border-slate-700">
+          <div className="flex items-center justify-between p-4 border-b border-slate-700">
+            <h3 className="text-lg font-medium text-slate-100">{title}</h3>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-slate-400 hover:text-slate-300"
             >
               <svg
                 className="w-6 h-6"

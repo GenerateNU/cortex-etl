@@ -13,19 +13,16 @@ export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKe
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    storage: window.localStorage,
   },
 })
 
 export const authService = {
   async signIn(email: string, password: string) {
-    console.log("Signing in...")
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
     if (error) throw error
-    console.log("Signed in!")
     return data
   },
 
@@ -34,17 +31,33 @@ export const authService = {
     if (error) throw error
   },
 
+  async getSession() {
+    const { data: { session }, error } = await supabase.auth.getSession()
+    if (error) throw error
+    return session
+  },
+
   async getCurrentUser(): Promise<User | null> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return null
 
-    const { data: profile } = await supabase
+    const { data: profile, error } = await supabase
       .from('profiles')
       .select('first_name, last_name, role, tenant_id')
       .eq('id', user.id)
       .single()
 
-    console.log(profile)
+    if (error) {
+      console.error('Failed to fetch profile:', error)
+      return {
+        id: user.id,
+        email: user.email!,
+        first_name: '',
+        last_name: '',
+        tenant_id: null,
+        role: 'tenant',
+      }
+    }
 
     return {
       id: user.id,
@@ -76,7 +89,10 @@ export const tenantService = {
       .eq('id', id)
       .single()
     
-    if (error) return null
+    if (error) {
+      console.error('Failed to fetch tenant:', error)
+      return null
+    }
     return data
   },
 
@@ -93,15 +109,42 @@ export const tenantService = {
 }
 
 export const fileService = {
-  async uploadFile(file: File, tenantId: string): Promise<string> {
-    const fileName = `${tenantId}/${Date.now()}-${file.name}`
+  async uploadFile(file: File, tenantId: string): Promise<{ fileId: string; path: string }> {
+    const fileName = `${tenantId}/${file.name}`
     
-    const { data, error } = await supabase.storage
+    console.log('Starting upload:', { fileName, tenantId })
+    
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from('documents')
       .upload(fileName, file)
     
-    if (error) throw error
-    return data.path
+    if (uploadError) {
+      console.error('Storage upload failed:', uploadError)
+      throw uploadError
+    }
+    
+    console.log('Storage upload succeeded:', uploadData.path)
+    
+    const { data, error: dbError } = await supabase
+      .from('file_uploads')
+      .insert({
+        name: file.name,
+        bucket_id: 'documents',
+        tenant_id: tenantId,
+      })
+      .select()  // Get the inserted row back
+    
+    console.log('Database insert result:', { data, error: dbError })
+    
+    if (dbError) {
+      console.error('Database insert failed, rolling back storage:', dbError)
+      await supabase.storage.from('documents').remove([uploadData.path])
+      throw dbError
+    }
+    
+    console.log('File upload complete, ID:', data?.[0]?.id)
+    
+    return { fileId: data[0].id, path: uploadData.path }
   },
 
   async getFiles(tenantId: string): Promise<FileUpload[]> {
@@ -115,19 +158,29 @@ export const fileService = {
     return data || []
   },
 
-  async deleteFile(path: string): Promise<void> {
-    const { error } = await supabase.storage
+  async deleteFile(filePath: string, fileId: string): Promise<void> {
+    // Delete from storage using path
+    const { error: storageError } = await supabase.storage
       .from('documents')
-      .remove([path])
+      .remove([filePath])
     
-    if (error) throw error
+    if (storageError) throw storageError
+    
+    // Delete from database - this should cascade to extracted_files
+    const { error: dbError } = await supabase
+      .from('file_uploads')
+      .delete()
+      .eq('id', fileId)
+    
+    if (dbError) throw dbError
   },
 
-  getPublicUrl(path: string): string {
-    const { data } = supabase.storage
+  async getSignedUrl(path: string): Promise<string> {
+    const { data, error } = await supabase.storage
       .from('documents')
-      .getPublicUrl(path)
+      .createSignedUrl(path, 3600)
     
-    return data.publicUrl
+    if (error) throw error
+    return data.signedUrl
   },
 }

@@ -16,7 +16,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (credentials: LoginForm) => {
     await authService.signIn(credentials.email, credentials.password)
-    // User state will be updated via the auth state change listener
   }
 
   const logout = async () => {
@@ -35,22 +34,67 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const loadTenantData = async (tenantId: string | null) => {
+    if (tenantId) {
+      const tenant = await tenantService.getTenant(tenantId)
+      setCurrentTenant(tenant)
+    } else {
+      setCurrentTenant(null)
+    }
+  }
+
   useEffect(() => {
-    const {
-      data: { subscription },
-    } = authService.onAuthStateChange(async user => {
-      setUser(user)
-      setIsLoading(false)
+    let subscription: any = null
 
-      if (user?.tenant_id) {
-        const tenant = await tenantService.getTenant(user.tenant_id)
-        setCurrentTenant(tenant)
-      } else {
+    async function initializeAuth() {
+      try {
+        const session = await authService.getSession()
+
+        if (!session) {
+          setIsLoading(false)
+          return
+        }
+
+        const currentUser = await authService.getCurrentUser()
+
+        if (!currentUser) {
+          setUser(null)
+          setCurrentTenant(null)
+          setIsLoading(false)
+          return
+        }
+
+        setUser(currentUser)
+        await loadTenantData(currentUser.tenant_id)
+        setIsLoading(false)
+      } catch (error) {
+        console.error('Auth initialization error:', error)
+        setUser(null)
         setCurrentTenant(null)
-      }
-    })
+        setIsLoading(false)
+      } finally {
+        const {
+          data: { subscription: sub },
+        } = authService.onAuthStateChange(async user => {
+          setUser(user)
 
-    return () => subscription.unsubscribe()
+          if (user?.tenant_id) {
+            await loadTenantData(user.tenant_id)
+          } else {
+            setCurrentTenant(null)
+          }
+        })
+        subscription = sub
+      }
+    }
+
+    initializeAuth()
+
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe()
+      }
+    }
   }, [])
 
   const value: AuthContextType = {

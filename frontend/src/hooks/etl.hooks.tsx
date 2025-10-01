@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { useAuth } from '../contexts/AuthContext'
-import { adminService } from '../services/api.service'
+import { adminService, fileProcessingService } from '../services/api.service'
 import { QUERY_KEYS } from '../utils/constants'
 
 export function useETLOperations() {
@@ -31,5 +31,11 @@ export function useProcessingStatus(jobId: string) {
     queryFn: () => adminService.getProcessingStatus(jobId),
     enabled: !!jobId,
     refetchInterval: 2000,
+  })
+}
+
+export function useProcessFile() {
+  return useMutation({
+    mutationFn: (fileId: string) => fileProcessingService.processPDF(fileId),
   })
 }

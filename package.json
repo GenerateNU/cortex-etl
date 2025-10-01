@@ -7,7 +7,7 @@
         "supabase:status": "npx supabase status",
         "dev:start": "npm run init:dev && docker-compose up -d",
         "dev": "npm run init:dev && docker-compose up",
-        "dev:build": "npm run init:dev && docker-compose up --build",
+        "dev:build": "npm run init:dev && docker-compose build --no-cache && docker-compose up",
         "dev:stop": "docker-compose down && npm run supabase:stop",
         "dev:logs": "docker-compose logs -f",
         "docker:clean": "npx supabase stop --no-backup && docker-compose down -v && docker container prune -f && docker network prune -f",
@@ -15,5 +15,8 @@
     },
     "devDependencies": {
         "supabase": "^2.45.5"
+    },
+    "dependencies": {
+        "react-pdf": "^10.1.0"
     }
 }

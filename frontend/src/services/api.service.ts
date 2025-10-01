@@ -1,5 +1,6 @@
 import axios, { type AxiosInstance } from 'axios'
 import type { ETLOperation, ProcessingJob } from '../types/admin.types'
+import { supabase } from './supabase.service'
 
 const baseURL = import.meta.env.VITE_API_BASE_URL
 
@@ -8,19 +9,25 @@ if (!baseURL) {
 }
 
 const api: AxiosInstance = axios.create({
-  baseURL,
-  withCredentials: true, // Include httpOnly cookies
+  baseURL: `${baseURL}/api`,
   headers: {
     'Content-Type': 'application/json',
   },
 })
 
-// Request interceptor for error handling
+// Add Authorization header with access token
+api.interceptors.request.use(async (config) => {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (session?.access_token) {
+    config.headers.Authorization = `Bearer ${session.access_token}`
+  }
+  return config
+})
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Redirect to login on unauthorized
       window.location.href = '/login'
     }
     return Promise.reject(error)
@@ -48,6 +55,13 @@ export const adminService = {
 
   async health(): Promise<{ status: string }> {
     const { data } = await api.get('/health')
+    return data
+  },
+}
+
+export const fileProcessingService = {
+  async processPDF(fileId: string): Promise<{ status: string; extraction_id: string }> {
+    const { data } = await api.post(`/extract_data/${fileId}`)
     return data
   },
 }
