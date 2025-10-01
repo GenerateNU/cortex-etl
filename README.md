@@ -1,6 +1,6 @@
 # Cortex ETL System
-
 Automated knowledge base creation system for manufacturing CPQ systems. Processes multi-format data (CSV, PDF, APIs) into structured, queryable databases with complete tenant isolation.
+
 
 ## Architecture
 
