@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import type {
   User,
@@ -6,6 +7,7 @@ import type {
   LoginForm,
 } from '../types/auth.types'
 import { authService, tenantService } from '../services/supabase.service'
+import type { Subscription } from '@supabase/supabase-js'
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
@@ -44,7 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
-    let subscription: any = null
+    let subscription: Subscription | null = null
 
     async function initializeAuth() {
       try {

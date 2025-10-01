@@ -16,8 +16,10 @@ const api: AxiosInstance = axios.create({
 })
 
 // Add Authorization header with access token
-api.interceptors.request.use(async (config) => {
-  const { data: { session } } = await supabase.auth.getSession()
+api.interceptors.request.use(async config => {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
   if (session?.access_token) {
     config.headers.Authorization = `Bearer ${session.access_token}`
   }
@@ -25,8 +27,8 @@ api.interceptors.request.use(async (config) => {
 })
 
 api.interceptors.response.use(
-  (response) => response,
-  (error) => {
+  response => response,
+  error => {
     if (error.response?.status === 401) {
       window.location.href = '/login'
     }
@@ -40,7 +42,10 @@ export const adminService = {
     return data
   },
 
-  async startProcessing(tenantId: string, fileIds: string[]): Promise<ProcessingJob> {
+  async startProcessing(
+    tenantId: string,
+    fileIds: string[]
+  ): Promise<ProcessingJob> {
     const { data } = await api.post('/admin/process', {
       tenant_id: tenantId,
       file_ids: fileIds,
@@ -60,7 +65,9 @@ export const adminService = {
 }
 
 export const fileProcessingService = {
-  async processPDF(fileId: string): Promise<{ status: string; extraction_id: string }> {
+  async processPDF(
+    fileId: string
+  ): Promise<{ status: string; extraction_id: string }> {
     const { data } = await api.post(`/extract_data/${fileId}`)
     return data
   },
