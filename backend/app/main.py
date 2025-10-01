@@ -1,9 +1,11 @@
+import os
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
+
 from app.api.endpoints.api_routes import router as api_router
 from app.core.seed_data import seed_database
-import os
 from app.util.supabase_check import wait_for_supabase
 
 

@@ -1,4 +1,5 @@
-from fastapi import Request, HTTPException
+from fastapi import HTTPException, Request
+
 from app.core.supabase import supabase
 
 

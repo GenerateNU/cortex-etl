@@ -1,7 +1,6 @@
-import httpx
 import asyncio
+
 from app.core.supabase import supabase
-import os
 
 
 async def wait_for_supabase():
@@ -17,7 +16,7 @@ async def wait_for_supabase():
             print("Database table access verified", flush=True)
 
             # 2. Test auth admin list (this was working in health check)
-            users = supabase.auth.admin.list_users(page=1, per_page=1)
+            supabase.auth.admin.list_users(page=1, per_page=1)
             print("Auth admin list_users working", flush=True)
 
             # 3. Test the EXACT failing operation - creating a user
@@ -35,7 +34,8 @@ async def wait_for_supabase():
                 if test_user.user:
                     supabase.auth.admin.delete_user(test_user.user.id)
                     print(
-                        "Auth admin create_user working - test user created and deleted",
+                        "Auth admin create_user working - \
+                        test user created and deleted",
                         flush=True,
                     )
 
@@ -50,7 +50,8 @@ async def wait_for_supabase():
             if attempt == max_retries - 1:
                 raise Exception(f"Failed to connect after {max_retries} attempts: {e}")
             print(
-                f"Waiting for Supabase create_user capability... ({attempt + 1}/{max_retries}): {e}",
+                f"Waiting for Supabase create_user capability... \
+                ({attempt + 1}/{max_retries}): {e}",
                 flush=True,
             )
             await asyncio.sleep(3)  # Longer delay since we're testing more
