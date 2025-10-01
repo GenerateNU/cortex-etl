@@ -15,8 +15,5 @@
     },
     "devDependencies": {
         "supabase": "^2.45.5"
-    },
-    "dependencies": {
-        "react-pdf": "^10.1.0"
     }
 }
