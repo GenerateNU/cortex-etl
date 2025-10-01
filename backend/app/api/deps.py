@@ -1,41 +1,46 @@
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.orm import Session
-
-from app.core.database import get_db
-from app.core.security import decode_token
-from app.models.user import User
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+from fastapi import Request, HTTPException
+from app.core.supabase import supabase
 
 
-async def get_current_user(
-    db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)
-) -> User:
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+async def get_current_user(request: Request):
+    auth_header = request.headers.get("Authorization")
 
-    payload = decode_token(token)
-    if payload is None:
-        raise credentials_exception
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
 
-    email: str = payload.get("sub")
-    if email is None:
-        raise credentials_exception
+    token = auth_header.split(" ")[1]
 
-    user = db.query(User).filter(User.email == email).first()
-    if user is None:
-        raise credentials_exception
+    try:
+        user_response = supabase.auth.get_user(token)
+        user = user_response.user
+
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid token")
+
+        profile_result = (
+            supabase.table("profiles")
+            .select("role, tenant_id")
+            .eq("id", user.id)
+            .single()
+            .execute()
+        )
+
+        return {
+            "id": user.id,
+            "email": user.email,
+            "user_metadata": {
+                "role": profile_result.data.get("role"),
+                "tenant_id": profile_result.data.get("tenant_id"),
+            },
+        }
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+
+
+async def get_current_admin(request: Request):
+    user = await get_current_user(request)
+
+    if user["user_metadata"].get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
 
     return user
-
-
-async def get_current_admin(current_user: User = Depends(get_current_user)) -> User:
-    if current_user.role.value != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
-        )
-    return current_user

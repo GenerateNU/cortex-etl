@@ -1,0 +1,246 @@
+import { useState } from 'react'
+import { Layout } from '../components/layout/Layout'
+import { useAuth } from '../contexts/AuthContext'
+import { useFiles, useUpload, useDeleteFile } from '../hooks/files.hooks'
+import { Modal } from '../components/ui/Modal'
+import { Button } from '../components/ui/Button'
+import { useProcessFile } from '../hooks/etl.hooks'
+import type { FileUpload } from '../types/file.types'
+import { ViewPDFModal } from '../components/ui/ViewPDFModal'
+
+export function DocumentPage() {
+  const { user } = useAuth()
+  const { data: files, isLoading } = useFiles()
+  const uploadMutation = useUpload()
+  const deleteMutation = useDeleteFile()
+  const processFile = useProcessFile()
+
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
+  const [viewingFile, setViewingFile] = useState<FileUpload | null>(null)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+
+  const isTenant = user?.role === 'tenant'
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setSelectedFiles(Array.from(e.target.files))
+    }
+  }
+
+  const handleUpload = async () => {
+    if (selectedFiles.length === 0) return
+
+    for (const file of selectedFiles) {
+      const result = await uploadMutation.mutateAsync(file)
+
+      // Auto-process PDFs
+      if (file.name.toLowerCase().endsWith('.pdf')) {
+        processFile.mutate(result.fileId)
+      }
+    }
+
+    setSelectedFiles([])
+    setIsUploadModalOpen(false)
+  }
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const handleDelete = async (fileId: string, fileName: string) => {
+    if (confirm('Are you sure you want to delete this file?')) {
+      await deleteMutation.mutateAsync({
+        fileId,
+        filePath: `${user?.tenant_id}/${fileName}`,
+      })
+    }
+  }
+
+  return (
+    <Layout>
+      <div className="space-y-6">
+        {/* Header with Upload Button */}
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-semibold text-slate-100">Documents</h1>
+          {isTenant && (
+            <Button onClick={() => setIsUploadModalOpen(true)}>
+              Upload Files
+            </Button>
+          )}
+        </div>
+
+        {/* Files List */}
+        <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
+          {isLoading ? (
+            <div className="text-center py-12 text-slate-400">Loading...</div>
+          ) : files && files.length > 0 ? (
+            <div className="space-y-3">
+              {files.map(file => (
+                <div
+                  key={file.id}
+                  className="flex items-center justify-between p-4 bg-slate-700 rounded-lg"
+                >
+                  <div className="flex items-center space-x-3">
+                    <svg
+                      className="w-8 h-8 text-slate-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <div>
+                      <p className="text-slate-100 font-medium">{file.name}</p>
+                      <p className="text-sm text-slate-400">
+                        {new Date(file.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setViewingFile(file)}
+                  >
+                    View
+                  </Button>
+                  {isTenant && (
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => handleDelete(file.id, file.name)}
+                      loading={deleteMutation.isPending}
+                    >
+                      Delete
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <svg
+                className="mx-auto h-16 w-16 text-slate-600 mb-4"
+                stroke="currentColor"
+                fill="none"
+                viewBox="0 0 48 48"
+              >
+                <path
+                  d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                  strokeWidth={1.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <h3 className="text-lg font-medium text-slate-300 mb-2">
+                No documents yet
+              </h3>
+              <p className="text-slate-400">
+                {isTenant
+                  ? 'Upload files to get started with data processing'
+                  : 'No files uploaded for this tenant'}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Upload Modal - Only for Tenants */}
+        {isTenant && (
+          <Modal
+            isOpen={isUploadModalOpen}
+            onClose={() => {
+              setIsUploadModalOpen(false)
+              setSelectedFiles([])
+            }}
+            title="Upload Files"
+          >
+            <div className="space-y-4">
+              <input
+                type="file"
+                multiple
+                onChange={handleFileSelect}
+                className="block w-full text-sm text-slate-300
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-lg file:border-0
+                  file:text-sm file:font-medium
+                  file:bg-primary-500 file:text-white
+                  hover:file:bg-primary-600
+                  file:cursor-pointer cursor-pointer"
+              />
+
+              {selectedFiles.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm text-slate-400">
+                    {selectedFiles.length} file(s) selected:
+                  </p>
+                  <div className="max-h-48 overflow-y-auto space-y-2">
+                    {selectedFiles.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-2 bg-slate-700 rounded text-sm"
+                      >
+                        <span className="text-slate-300 truncate">
+                          {file.name}
+                        </span>
+                        <button
+                          onClick={() => removeFile(index)}
+                          className="text-slate-400 hover:text-slate-200 ml-2"
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-3">
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setIsUploadModalOpen(false)
+                    setSelectedFiles([])
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleUpload}
+                  disabled={selectedFiles.length === 0}
+                  loading={uploadMutation.isPending}
+                >
+                  Upload{' '}
+                  {selectedFiles.length > 0 && `(${selectedFiles.length})`}
+                </Button>
+              </div>
+            </div>
+          </Modal>
+        )}
+      </div>
+
+      {viewingFile && (
+        <ViewPDFModal
+          filePath={viewingFile.name}
+          fileName={viewingFile.name}
+          onClose={() => setViewingFile(null)}
+        />
+      )}
+    </Layout>
+  )
+}

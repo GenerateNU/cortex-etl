@@ -1,0 +1,22 @@
+{
+    "scripts": {
+        "init:dev": "node init-dev.js",
+        "supabase:start": "npx supabase start",
+        "supabase:stop": "npx supabase stop",
+        "supabase:reset": "npx supabase db reset",
+        "supabase:status": "npx supabase status",
+        "dev:start": "npm run init:dev && docker-compose up -d",
+        "dev": "npm run init:dev && docker-compose up",
+        "dev:build": "npm run init:dev && docker-compose build --no-cache && docker-compose up",
+        "dev:stop": "docker-compose down && npm run supabase:stop",
+        "dev:logs": "docker-compose logs -f",
+        "docker:clean": "npx supabase stop --no-backup && docker-compose down -v && docker container prune -f && docker network prune -f",
+        "fresh": "npm run docker:clean && npm run dev:build"
+    },
+    "devDependencies": {
+        "supabase": "^2.45.5"
+    },
+    "dependencies": {
+        "react-pdf": "^10.1.0"
+    }
+}

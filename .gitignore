@@ -37,3 +37,7 @@ npm-debug.log*
 
 # Docker
 docker-compose.override.yml
+
+# Supabase
+.env.supabase.local
+kong.yml

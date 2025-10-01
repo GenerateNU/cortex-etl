@@ -1,14 +1,29 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+from app.api.endpoints.api_routes import router as api_router
+from app.core.seed_data import seed_database
+import os
+from app.util.supabase_check import wait_for_supabase
 
-from app.api import api_router
 
-app = FastAPI(title="Cortex ETL API", version="0.1.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    print("LIFESPAN STARTING", flush=True)  # Basic print to see if this runs
+    await wait_for_supabase()
+    if os.getenv("ENVIRONMENT") == "development":
+        await seed_database()
+    yield
+    # Shutdown (if needed)
+
+
+app = FastAPI(title="Cortex ETL API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_credentials=True,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -18,9 +33,4 @@ app.include_router(api_router, prefix="/api")
 
 @app.get("/")
 def read_root():
-    return {"message": "Cortex ETL API"}
-
-
-@app.get("/health")
-def health_check():
-    return {"status": "healthy"}
+    return {"message": "Cortex ETL Backend"}
