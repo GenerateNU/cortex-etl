@@ -87,14 +87,6 @@ export function ViewPDFModal({
     console.error(error)
   }
 
-  const goToPrevPage = () => {
-    setPageNumber(prev => Math.max(prev - 1, 1))
-  }
-
-  const goToNextPage = () => {
-    setPageNumber(prev => Math.min(prev + 1, numPages))
-  }
-
   const zoomIn = () => {
     setScale(prev => Math.min(prev + 0.25, 3.0))
   }
@@ -139,11 +131,11 @@ export function ViewPDFModal({
       switch (e.key) {
         case 'ArrowLeft':
           e.preventDefault()
-          goToPrevPage()
+          setPageNumber(prev => Math.max(prev - 1, 1))
           break
         case 'ArrowRight':
           e.preventDefault()
-          goToNextPage()
+          setPageNumber(prev => Math.min(prev + 1, numPages))
           break
         case '+':
         case '=':
@@ -176,7 +168,7 @@ export function ViewPDFModal({
     window.addEventListener('keydown', handleKeyDown, { capture: true })
     return () =>
       window.removeEventListener('keydown', handleKeyDown, { capture: true })
-  }, [pageNumber, numPages, scale])
+  }, [pageNumber, numPages, scale, onClose])
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
