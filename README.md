@@ -35,7 +35,7 @@ This single command:
 
 - **Frontend**: http://localhost:5173
 - **Backend API**: http://localhost:8000
-- **Supabase Studio**: http://localhost:3000
+- **Supabase Studio**: http://localhost:54323
 
 ## Available Commands
 
