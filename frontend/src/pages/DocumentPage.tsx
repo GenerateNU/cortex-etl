@@ -9,7 +9,7 @@ import type { FileUpload } from '../types/file.types'
 import { ViewPDFModal } from '../components/ui/ViewPDFModal'
 
 export function DocumentPage() {
-  const { user } = useAuth()
+  const { user, currentTenant } = useAuth()
   const { data: files, isLoading } = useFiles()
   const uploadMutation = useUpload()
   const deleteMutation = useDeleteFile()
@@ -51,7 +51,7 @@ export function DocumentPage() {
     if (confirm('Are you sure you want to delete this file?')) {
       await deleteMutation.mutateAsync({
         fileId,
-        filePath: `${user?.tenant_id}/${fileName}`,
+        filePath: `${currentTenant?.id}/${fileName}`,
       })
     }
   }
@@ -101,23 +101,25 @@ export function DocumentPage() {
                       </p>
                     </div>
                   </div>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setViewingFile(file)}
-                  >
-                    View
-                  </Button>
-                  {isTenant && (
+                  <div>
                     <Button
-                      variant="danger"
+                      variant="primary"
                       size="sm"
-                      onClick={() => handleDelete(file.id, file.name)}
-                      loading={deleteMutation.isPending}
+                      onClick={() => setViewingFile(file)}
                     >
-                      Delete
+                      View
                     </Button>
-                  )}
+                    {isTenant && (
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => handleDelete(file.id, file.name)}
+                        loading={deleteMutation.isPending}
+                      >
+                        Delete
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -236,7 +238,7 @@ export function DocumentPage() {
 
       {viewingFile && (
         <ViewPDFModal
-          filePath={viewingFile.name}
+          filePath={`${currentTenant?.id}/${viewingFile.name}`}
           fileName={viewingFile.name}
           onClose={() => setViewingFile(null)}
         />

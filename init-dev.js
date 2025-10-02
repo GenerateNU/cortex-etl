@@ -7,44 +7,15 @@ console.log("🔧 Initializing Cortex ETL development environment...");
 
 async function initializeSupabaseCLI() {
   try {
-    // Step 1: Install Supabase CLI as dev dependency
-    console.log("📦 Installing Supabase CLI as dev dependency...");
-    try {
-      // Check if already in package.json
-      const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
-      if (!packageJson.devDependencies?.supabase) {
-        console.log("⬇️  Adding supabase to devDependencies...");
-        execSync("npm install -D supabase", { stdio: "inherit" });
-        console.log("✅ Supabase CLI installed as dev dependency");
-      } else {
-        console.log("✅ Supabase CLI already installed");
-      }
-    } catch (error) {
-      console.log("⬇️  Installing Supabase CLI...");
-      execSync("npm install -D supabase", { stdio: "inherit" });
-      console.log("✅ Supabase CLI installed");
-    }
-
-    // Step 2: Initialize Supabase project if needed
-    if (!fs.existsSync("supabase")) {
-      console.log("🚀 Initializing Supabase project...");
-      execSync("npx supabase init", { stdio: "inherit" });
-      console.log("✅ Supabase project initialized");
-    } else {
-      console.log("✅ Supabase project already exists");
-    }
-
-    // Step 3: Start Supabase services
     console.log("🏃 Starting Supabase services...");
-    execSync("npx supabase start", { stdio: "inherit" });
+    execSync("npx supabase start --exclude vector", { stdio: "inherit" });
     console.log("✅ Supabase services started");
-
-    // Step 4: Get environment variables from CLI status
     console.log("🔑 Extracting keys from Supabase CLI...");
-    const { stdout } = await execAsync("npx supabase status");
-    const cliEnv = parseSupabaseStatus(stdout);
+    const { stdout } = await execAsync("npx supabase status -o json");
+    console.log(stdout);
+    const cliEnv = parseSupabaseStatus(JSON.parse(stdout));
+    console.log(cliEnv);
 
-    // Step 5: Generate .env file
     console.log("📝 Generating .env file...");
     const envContent = generateEnvFile(cliEnv);
     fs.writeFileSync(".env", envContent);
@@ -66,28 +37,23 @@ async function initializeSupabaseCLI() {
 
 function parseSupabaseStatus(output) {
   const env = {};
-  const lines = output.split("\n");
 
-  lines.forEach((line) => {
-    const trimmedLine = line.trim();
-
-    // Parse different line formats from status output
-    if (trimmedLine.includes("API URL:")) {
-      env.SUPABASE_URL = trimmedLine.split("API URL:")[1].trim();
-    } else if (trimmedLine.includes("DB URL:")) {
-      env.DB_URL = trimmedLine.split("DB URL:")[1].trim();
-    } else if (trimmedLine.includes("Studio URL:")) {
-      env.STUDIO_URL = trimmedLine.split("Studio URL:")[1].trim();
-    } else if (trimmedLine.includes("anon key:")) {
-      env.SUPABASE_ANON_KEY = trimmedLine.split("anon key:")[1].trim();
-    } else if (trimmedLine.includes("service_role key:")) {
-      env.SUPABASE_SERVICE_ROLE_KEY = trimmedLine
-        .split("service_role key:")[1]
-        .trim();
-    } else if (trimmedLine.includes("JWT secret:")) {
-      env.JWT_SECRET = trimmedLine.split("JWT secret:")[1].trim();
-    }
-  });
+  // Parse different line formats from status output
+  if (output.API_URL) {
+    env.SUPABASE_URL = output.API_URL;
+  }
+  if (output.DB_URL) {
+    env.DB_URL = output.DB_URL;
+  }
+  if (output.STUDIO_URL) {
+    env.STUDIO_URL = output.STUDIO_URL;
+  }
+  if (output.ANON_KEY) {
+    env.SUPABASE_ANON_KEY = output.ANON_KEY;
+  }
+  if (output.SERVICE_ROLE_KEY) {
+    env.SUPABASE_SERVICE_ROLE_KEY = output.SERVICE_ROLE_KEY;
+  }
 
   return env;
 }
@@ -117,7 +83,6 @@ STUDIO_URL=${cliEnv.STUDIO_URL || "http://localhost:54323"}
 DB_URL=${
     cliEnv.DB_URL || "postgresql://postgres:postgres@localhost:54322/postgres"
   }
-JWT_SECRET=${cliEnv.JWT_SECRET || ""}
 `;
 }
 
