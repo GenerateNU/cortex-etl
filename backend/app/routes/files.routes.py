@@ -1,20 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
-
-from app.api.deps import get_current_admin, get_current_user
+from fastapi import HTTPException, Depends
 from app.core.supabase import supabase
-from app.services.etl_processor import start_etl_process
+from app.core.dependencies import get_current_user
 from app.services.pdf_extractor import extract_pdf_data
+from fastapi import APIRouter
 
-router = APIRouter()
-
-
-@router.get("/health")
-async def health_check():
-    try:
-        supabase.table("tenants").select("count", count="exact").execute()
-        return {"status": "healthy", "database": "connected"}
-    except Exception as e:
-        return {"status": "unhealthy", "database": "disconnected", "error": str(e)}
+router = APIRouter(prefix="/files", tags=["Files"])
 
 
 @router.post("/extract_data/{file_id}")
@@ -67,10 +57,3 @@ async def process_pdf(file_id: str, user=Depends(get_current_user)):
         raise HTTPException(
             status_code=500, detail=f"Processing failed: {error_message}"
         )
-
-
-@router.post("/process")
-async def process_etl(tenant_id: str, admin=Depends(get_current_admin)):
-    """Start ETL process for a tenant"""
-    result = await start_etl_process(tenant_id)
-    return result

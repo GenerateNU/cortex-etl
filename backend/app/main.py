@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.endpoints.api_routes import router as api_router
+from app.api import api_router
 from app.core.seed_data import seed_database
 from app.util.supabase_check import wait_for_supabase
 
@@ -30,7 +30,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(api_router, prefix="/api")
+app.include_router(api_router)
 
 
 @app.get("/")
