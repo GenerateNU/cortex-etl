@@ -4,7 +4,6 @@ import { useAuth } from '../contexts/AuthContext'
 import { useFiles, useUpload, useDeleteFile } from '../hooks/files.hooks'
 import { Modal } from '../components/ui/Modal'
 import { Button } from '../components/ui/Button'
-import { useProcessFile } from '../hooks/etl.hooks'
 import type { FileUpload } from '../types/file.types'
 import { ViewPDFModal } from '../components/ui/ViewPDFModal'
 
@@ -13,7 +12,6 @@ export function DocumentPage() {
   const { data: files, isLoading } = useFiles()
   const uploadMutation = useUpload()
   const deleteMutation = useDeleteFile()
-  const processFile = useProcessFile()
 
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [viewingFile, setViewingFile] = useState<FileUpload | null>(null)
@@ -31,12 +29,7 @@ export function DocumentPage() {
     if (selectedFiles.length === 0) return
 
     for (const file of selectedFiles) {
-      const result = await uploadMutation.mutateAsync(file)
-
-      // Auto-process PDFs
-      if (file.name.toLowerCase().endsWith('.pdf')) {
-        processFile.mutate(result.fileId)
-      }
+      await uploadMutation.mutateAsync(file)
     }
 
     setSelectedFiles([])
