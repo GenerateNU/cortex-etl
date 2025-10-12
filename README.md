@@ -37,6 +37,16 @@ This single command:
 - **Backend API**: http://localhost:8000
 - **Supabase Studio**: http://localhost:54323
 
+### Development Login Credentials
+
+| Email                        | Password | Role   |
+|------------------------------|----------|--------|
+| admin@cortex.com             | password | Admin  |
+| eng@kawasaki-robotics.com    | password | Tenant |
+| eng@kuka.com                 | password | Tenant |
+| eng@staubli.com              | password | Tenant |
+| eng@milara.com               | password | Tenant |
+
 ## Available Commands
 
 ```bash
