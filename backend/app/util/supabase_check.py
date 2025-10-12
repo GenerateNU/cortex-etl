@@ -48,7 +48,9 @@ async def wait_for_supabase():
 
         except Exception as e:
             if attempt == max_retries - 1:
-                raise Exception(f"Failed to connect after {max_retries} attempts: {e}")
+                raise Exception(
+                    f"Failed to connect after {max_retries} attempts: {e}"
+                ) from e
             print(
                 f"Waiting for Supabase create_user capability... \
                 ({attempt + 1}/{max_retries}): {e}",

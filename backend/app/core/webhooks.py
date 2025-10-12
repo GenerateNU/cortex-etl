@@ -1,4 +1,5 @@
 import os
+
 from app.core.supabase import supabase
 
 

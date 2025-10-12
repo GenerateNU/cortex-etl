@@ -35,7 +35,9 @@ async def get_current_user(request: Request):
             },
         }
     except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+        raise HTTPException(
+            status_code=401, detail=f"Authentication failed: {str(e)}"
+        ) from e
 
 
 async def get_current_admin(request: Request):

@@ -1,7 +1,7 @@
-from fastapi import Depends
+from fastapi import APIRouter, Depends
+
 from app.core.dependencies import get_current_admin
 from app.services.etl_processor import start_etl_process
-from fastapi import APIRouter
 
 router = APIRouter(prefix="/process", tags=["Process"])
 

@@ -27,14 +27,6 @@ npm-debug.log*
 .env
 .env.local
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
-
 # Docker
 docker-compose.override.yml
 

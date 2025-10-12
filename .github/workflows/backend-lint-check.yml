@@ -18,7 +18,5 @@ jobs:
       - name: Lint
         run: |
           cd backend
-          pip install black flake8 isort
-          black --check .
-          flake8 .
-          isort --check-only .
+          pip install ruff
+          ruff check

@@ -1,14 +1,16 @@
 import os
-from fastapi import APIRouter, HTTPException, Header
 from typing import Union
+
+from fastapi import APIRouter, Header, HTTPException
+
 from app.core.supabase import supabase
-from app.services.pdf_extractor import extract_pdf_data
 from app.schemas.webhook_schemas import (
     PDFUploadWebhookPayload,
-    WebhookSuccessResponse,
-    WebhookIgnoredResponse,
     WebhookErrorResponse,
+    WebhookIgnoredResponse,
+    WebhookSuccessResponse,
 )
+from app.services.pdf_extractor import extract_pdf_data
 
 router = APIRouter(prefix="/webhooks", tags=["Webhooks"])
 
@@ -64,4 +66,6 @@ async def handle_extract_webhook(
         raise
     except Exception as e:
         print(f"Extraction failed: {e}", flush=True)
-        raise HTTPException(status_code=500, detail=f"Extraction failed: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Extraction failed: {str(e)}"
+        ) from e
