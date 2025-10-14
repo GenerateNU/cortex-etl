@@ -15,5 +15,8 @@
     },
     "devDependencies": {
         "supabase": "2.47.2"
+    },
+    "dependencies": {
+        "dotenv": "^17.2.3"
     }
 }

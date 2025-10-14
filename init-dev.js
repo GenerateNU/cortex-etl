@@ -1,3 +1,4 @@
+require('dotenv').config()
 const fs = require("fs");
 const crypto = require("crypto");
 const { exec, execSync } = require("child_process");
@@ -95,6 +96,9 @@ STUDIO_URL=${cliEnv.STUDIO_URL || "http://localhost:54323"}
 DB_URL=${
     cliEnv.DB_URL || "postgresql://postgres:postgres@localhost:54322/postgres"
   }
+
+# Gemini API Key
+GEMINI_API_KEY=${process.env.GEMINI_API_KEY}
 `;
 }
 

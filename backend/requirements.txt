@@ -5,3 +5,14 @@ python-dotenv==1.0.1
 pydantic[email]==2.10.3
 pydantic-settings==2.6.1
 ruff==0.14.0
+docling==2.55.1
+docling-core==2.48.4
+docling-ibm-models==3.9.1
+docling-parse==4.5.0
+pdfplumber==0.11.7
+google-ai-generativelanguage==0.6.15
+google-api-core==2.25.2
+google-api-python-client==2.184.0
+google-auth==2.41.1
+google-auth-httplib2==0.2.0
+google-generativeai==0.8.5
