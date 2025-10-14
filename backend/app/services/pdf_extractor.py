@@ -1,30 +1,22 @@
-from datetime import datetime
-
-
-def extract_pdf_data(pdf_bytes: bytes, file_name: str) -> dict:
+class PDFExtractor:
     """
-    Pure function: Takes PDF bytes, returns extracted JSON data
-    No database or storage operations - just PDF → JSON transformation
-
-    TODO: Replace placeholder with actual PDF extraction logic
+    Unified PDF → JSON extractor (Docling + pdfplumber + optional Gemini)
     """
-
-    # Placeholder extraction logic
-    extracted_data = {
-        "source_pdf": file_name,
-        "extracted_at": datetime.now().isoformat(),
-        "placeholder": True,
-        "data": {
-            "title": f"Extracted from {file_name}",
-            "content": "PDF content will be extracted here",
-            "tables": [],
-            "text_blocks": [],
-        },
-        "metadata": {
-            "extractor_version": "0.1.0-placeholder",
-            "file_name": file_name,
-            "byte_size": len(pdf_bytes),
-        },
-    }
-
-    return extracted_data
+    def __init__(self, pdf_path: Path):
+        self.pdf_path = pdf_path
+        self.docling_data = None
+        self.plumber_data = None
+        self.concise_data = None
+    
+    # Docling extraction
+    def extract_docling(self):
+        ...
+    # pdfplumber extraction
+    def extract_pdfplumber(self):
+        ...
+    # LLM / Gemini
+    def structure_with_gemini(self, model: str):
+        ...
+    # Save JSON
+    def save_json(self, out_dir: Path):
+        ...
