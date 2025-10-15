@@ -42,8 +42,12 @@ async def handle_extract_webhook(
         # Download PDF from storage using full path
         pdf_bytes = supabase.storage.from_("documents").download(payload.storage_path)
 
+        print("PDF downloaded successfully", flush=True)
+
         # Extract data
         extracted_json = extract_pdf_data(pdf_bytes, payload.filename)
+
+        print("Data extracted successfully", flush=True)
 
         # Store extraction linked to file_uploads record
         extraction_result = (

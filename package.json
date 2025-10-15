@@ -1,6 +1,6 @@
 {
     "scripts": {
-        "init:dev": "node init-dev.js",
+        "init:dev": "npm install && node init-dev.js",
         "supabase:start": "npx supabase start",
         "supabase:stop": "npx supabase stop",
         "supabase:reset": "npx supabase db reset",
