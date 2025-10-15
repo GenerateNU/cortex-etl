@@ -14,7 +14,8 @@
         "fresh": "npm run docker:clean && npm run dev:build"
     },
     "devDependencies": {
-        "supabase": "2.47.2"
+        "supabase": "2.47.2",
+        "dotenv": "^17.2.3"
     },
     "dependencies": {
         "dotenv": "^17.2.3"

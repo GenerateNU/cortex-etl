@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import api_router
 from app.core.seed_data import seed_database
 from app.core.webhooks import configure_webhooks
-from app.util.supabase_check import wait_for_supabase
+from app.utils.supabase_check import wait_for_supabase
 
 
 @asynccontextmanager

@@ -2,8 +2,8 @@ import base64
 import os
 from enum import Enum
 
-from litellm import completion
-from litellm.types.utils import ModelResponse
+from litellm import aembedding, completion
+from litellm.types.utils import EmbeddingResponse, ModelResponse
 
 
 class ModelType(Enum):
@@ -15,12 +15,24 @@ class ModelType(Enum):
     GPT_4O = "openai/gpt-4o"
 
 
+class EmbeddingModelType(Enum):
+    """Available embedding models."""
+
+    # Gemini models (768 default, supports up to 3072)
+    GEMINI_TEXT_EMBEDDING = "gemini/text-embedding-004"
+
+    # OpenAI models
+    OPENAI_SMALL = "text-embedding-3-small"  # 1536 dimensions
+    OPENAI_LARGE = "text-embedding-3-large"  # 3072 dimensions
+
+
 class LLMClient:
     """Simplified LLM client for agentic workflows."""
 
     def __init__(self):
         """Initialize client and load API keys."""
         self.model = ModelType.GEMINI_FLASH
+        self.embedding_model = EmbeddingModelType.GEMINI_TEXT_EMBEDDING
         self.system_prompt: str | None = None
         self._load_api_keys()
 
@@ -34,9 +46,46 @@ class LLMClient:
         """Set the model to use for completions."""
         self.model = model
 
+    def set_embedding_model(self, model: EmbeddingModelType) -> None:
+        """Set the embedding model to use."""
+        self.embedding_model = model
+
     def set_system_prompt(self, system_prompt: str) -> None:
         """Set the system prompt for all requests."""
         self.system_prompt = system_prompt
+
+    async def embed(
+        self,
+        input_text: str | list[str],
+        model: EmbeddingModelType | None = None,
+    ) -> list[float] | list[list[float]]:
+        """
+        Generate embeddings for text.
+        ALWAYS returns 1536-dimensional vectors regardless of model.
+
+        Args:
+            input_text: Single string or list of strings to embed
+            model: Override default embedding model
+
+        Returns:
+            Single 1536-dim vector or list of 1536-dim vectors
+
+        """
+        embed_model = model.value if model else self.embedding_model.value
+
+        # Ensure input is a list
+        inputs = [input_text] if isinstance(input_text, str) else input_text
+
+        # Generate embeddings with fixed dimensions
+        response: EmbeddingResponse = await aembedding(
+            model=embed_model, input=inputs, dimensions=768
+        )
+
+        # Extract embeddings
+        embeddings = [data.embedding for data in response.data]
+
+        # Return single embedding if single input
+        return embeddings[0] if isinstance(input_text, str) else embeddings
 
     def chat(
         self,
@@ -54,17 +103,10 @@ class LLMClient:
             pdf_bytes: Optional PDF file bytes
             temperature: Sampling temperature (0-2), default 0.7
             max_tokens: Max tokens to generate
+            json_response: Force JSON output format
 
         Returns:
             ModelResponse with completion
-
-        Example:
-            >>> client = LLMClient()
-            >>> response = client.chat("What is 2+2?")
-            >>> print(response.choices[0].message.content)
-
-            >>> with open("doc.pdf", "rb") as f:
-            ...     response = client.chat("Summarize this", pdf_bytes=f.read())
         """
         messages = []
 
