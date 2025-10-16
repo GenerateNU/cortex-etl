@@ -13,6 +13,5 @@ export const QUERY_KEYS = {
   AUTH: ['auth'],
   FILES: ['files'],
   TENANTS: ['tenants'],
-  ETL_OPERATIONS: ['etl-operations'],
-  PROCESSING_STATUS: ['processing-status'],
+  EXTRACTED_FILES: ['extracted-files'],
 } as const

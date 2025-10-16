@@ -2,6 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
+from app.core.dependencies import get_current_admin
 from app.schemas.preprocess_schemas import (
     PreprocessSuccessResponse,
 )
@@ -11,11 +12,13 @@ router = APIRouter(prefix="/preprocess", tags=["Preprocess"])
 
 
 @router.post(
-    "/retry_extraction/{file_upload_id}", response_model=PreprocessSuccessResponse
+    "/retry_extraction/{file_upload_id}",
+    response_model=PreprocessSuccessResponse,
 )
 async def handle_extract_webhook(
     file_upload_id: UUID,
     preprocess_service: PreprocessService = Depends(get_preprocess_service),
+    admin=Depends(get_current_admin),
 ) -> PreprocessSuccessResponse:
     """Webhook triggered on PDF uploads"""
 

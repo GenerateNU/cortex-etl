@@ -1,19 +1,30 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { tenantService } from '../../services/supabase.service'
-import { useQuery } from '@tanstack/react-query'
+import { useGetAllTenants } from '../../hooks/tenant.hooks'
+import { useTenantParam } from '../../hooks/useUrlState'
 
 export function Navbar() {
   const { user, currentTenant, logout, switchTenant } = useAuth()
   const location = useLocation()
   const [showTenantDropdown, setShowTenantDropdown] = useState(false)
+  const [tenantParam, setTenantParam] = useTenantParam()
 
-  const { data: tenants = [] } = useQuery({
-    queryKey: ['tenants'],
-    queryFn: tenantService.getAllTenants,
-    enabled: user?.role === 'admin',
-  })
+  const { tenants = [] } = useGetAllTenants()
+
+  // Restore tenant from URL on mount
+  useEffect(() => {
+    if (user?.role === 'admin' && tenantParam && !currentTenant) {
+      switchTenant(tenantParam)
+    }
+  }, [tenantParam, user?.role, currentTenant, switchTenant])
+
+  // Sync URL when tenant changes in context
+  useEffect(() => {
+    if (currentTenant && tenantParam !== currentTenant.id) {
+      setTenantParam(currentTenant.id)
+    }
+  }, [currentTenant, tenantParam, setTenantParam])
 
   const handleLogout = async () => {
     try {
@@ -25,6 +36,7 @@ export function Navbar() {
 
   const handleTenantSwitch = async (tenantId: string) => {
     await switchTenant(tenantId)
+    setTenantParam(tenantId)
     setShowTenantDropdown(false)
   }
 

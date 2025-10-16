@@ -1,18 +1,5 @@
-export interface Tenant {
-  id: string
-  name: string
-  created_at: string
-  is_active: boolean
-}
-
-export interface User {
-  id: string
-  email: string
-  first_name: string
-  last_name: string
-  tenant_id: string | null // Current tenant: fixed for tenant users, selected for admins
-  role: 'tenant' | 'admin'
-}
+import type { Tenant } from './tenant.types'
+import type { User } from './user.types'
 
 export interface LoginForm {
   email: string

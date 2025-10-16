@@ -1,23 +1,59 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Layout } from '../components/layout/Layout'
 import { useAuth } from '../contexts/AuthContext'
-import { useFiles, useUpload, useDeleteFile } from '../hooks/files.hooks'
+import { useGetAllFiles, useFilesMutations } from '../hooks/files.hooks'
+import { useGetAllExtractedFiles } from '../hooks/extracted-file.hooks'
+import { useRealtimeSubscription } from '../hooks/useRealtimeSubscription'
+import { useFileParam } from '../hooks/useUrlState'
 import { Modal } from '../components/ui/Modal'
 import { Button } from '../components/ui/Button'
-import type { FileUpload } from '../types/file.types'
+import { StatusBadge } from '../components/ui/StatusBadge'
 import { ViewPDFModal } from '../components/ui/ViewPDFModal'
+import { AdminDocumentViewer } from '../components/documents/AdminDocumentViewer'
+import { QUERY_KEYS } from '../utils/constants'
+import type { FileUpload } from '../types/file.types'
 
 export function DocumentPage() {
-  const { user, currentTenant } = useAuth()
-  const { data: files, isLoading } = useFiles()
-  const uploadMutation = useUpload()
-  const deleteMutation = useDeleteFile()
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
+  const { files, filesIsLoading } = useGetAllFiles()
+  const { extractedFiles } = useGetAllExtractedFiles()
+  const { uploadFile, deleteFile, isUploadingFile, isDeletingFile } =
+    useFilesMutations()
 
+  const [fileParam, setFileParam] = useFileParam()
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [viewingFile, setViewingFile] = useState<FileUpload | null>(null)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
 
   const isTenant = user?.role === 'tenant'
+  const isAdmin = user?.role === 'admin'
+
+  // Realtime subscription
+  useRealtimeSubscription({
+    table: 'extracted_files',
+    event: '*',
+    onEvent: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.EXTRACTED_FILES })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.FILES })
+    },
+  })
+
+  // Restore file from URL
+  useEffect(() => {
+    if (fileParam && files && !viewingFile) {
+      const file = files.find(f => f.id === fileParam)
+      if (file) setViewingFile(file)
+    }
+  }, [fileParam, files, viewingFile])
+
+  const getFileStatus = (
+    fileId: string
+  ): 'processing' | 'completed' | 'error' => {
+    const extracted = extractedFiles?.find(ef => ef.source_file_id === fileId)
+    return extracted ? 'completed' : 'processing'
+  }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -29,7 +65,7 @@ export function DocumentPage() {
     if (selectedFiles.length === 0) return
 
     for (const file of selectedFiles) {
-      await uploadMutation.mutateAsync(file)
+      await uploadFile(file)
     }
 
     setSelectedFiles([])
@@ -40,19 +76,26 @@ export function DocumentPage() {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index))
   }
 
-  const handleDelete = async (fileId: string, fileName: string) => {
+  const handleDelete = async (fileId: string) => {
     if (confirm('Are you sure you want to delete this file?')) {
-      await deleteMutation.mutateAsync({
-        fileId,
-        filePath: `${currentTenant?.id}/${fileName}`,
-      })
+      await deleteFile(fileId)
     }
+  }
+
+  const handleView = (file: FileUpload) => {
+    setViewingFile(file)
+    setFileParam(file.id)
+  }
+
+  const handleCloseModal = () => {
+    setViewingFile(null)
+    setFileParam(null)
   }
 
   return (
     <Layout>
       <div className="space-y-6">
-        {/* Header with Upload Button */}
+        {/* Header */}
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-semibold text-slate-100">Documents</h1>
           {isTenant && (
@@ -64,7 +107,7 @@ export function DocumentPage() {
 
         {/* Files List */}
         <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
-          {isLoading ? (
+          {filesIsLoading ? (
             <div className="text-center py-12 text-slate-400">Loading...</div>
           ) : files && files.length > 0 ? (
             <div className="space-y-3">
@@ -94,11 +137,12 @@ export function DocumentPage() {
                       </p>
                     </div>
                   </div>
-                  <div>
+                  <div className="flex items-center space-x-2">
+                    {isAdmin && <StatusBadge status={getFileStatus(file.id)} />}
                     <Button
                       variant="primary"
                       size="sm"
-                      onClick={() => setViewingFile(file)}
+                      onClick={() => handleView(file)}
                     >
                       View
                     </Button>
@@ -106,8 +150,8 @@ export function DocumentPage() {
                       <Button
                         variant="danger"
                         size="sm"
-                        onClick={() => handleDelete(file.id, file.name)}
-                        loading={deleteMutation.isPending}
+                        onClick={() => handleDelete(file.id)}
+                        loading={isDeletingFile}
                       >
                         Delete
                       </Button>
@@ -143,7 +187,7 @@ export function DocumentPage() {
           )}
         </div>
 
-        {/* Upload Modal - Only for Tenants */}
+        {/* Upload Modal */}
         {isTenant && (
           <Modal
             isOpen={isUploadModalOpen}
@@ -218,7 +262,7 @@ export function DocumentPage() {
                 <Button
                   onClick={handleUpload}
                   disabled={selectedFiles.length === 0}
-                  loading={uploadMutation.isPending}
+                  loading={isUploadingFile}
                 >
                   Upload{' '}
                   {selectedFiles.length > 0 && `(${selectedFiles.length})`}
@@ -229,12 +273,13 @@ export function DocumentPage() {
         )}
       </div>
 
-      {viewingFile && (
-        <ViewPDFModal
-          filePath={`${currentTenant?.id}/${viewingFile.name}`}
-          fileName={viewingFile.name}
-          onClose={() => setViewingFile(null)}
-        />
+      {/* Conditional Modal Rendering */}
+      {viewingFile && isTenant && (
+        <ViewPDFModal file={viewingFile} onClose={handleCloseModal} />
+      )}
+
+      {viewingFile && isAdmin && (
+        <AdminDocumentViewer file={viewingFile} onClose={handleCloseModal} />
       )}
     </Layout>
   )
