@@ -1,8 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useGetAllTenants } from '../../hooks/tenant.hooks'
 import { useTenantParam } from '../../hooks/useUrlState'
+
+const ROUTES = {
+  shared: [{ path: '/', label: 'Documents' }],
+  adminOnly: [
+    // { path: '/admin', label: 'Admin' },
+    { path: '/cluster-visualization', label: 'Clusters' },
+  ],
+  tenantOnly: [],
+} as const
 
 export function Navbar() {
   const { user, currentTenant, logout, switchTenant } = useAuth()
@@ -12,14 +21,12 @@ export function Navbar() {
 
   const { tenants = [] } = useGetAllTenants()
 
-  // Restore tenant from URL on mount
   useEffect(() => {
     if (user?.role === 'admin' && tenantParam && !currentTenant) {
       switchTenant(tenantParam)
     }
   }, [tenantParam, user?.role, currentTenant, switchTenant])
 
-  // Sync URL when tenant changes in context
   useEffect(() => {
     if (currentTenant && tenantParam !== currentTenant.id) {
       setTenantParam(currentTenant.id)
@@ -46,6 +53,15 @@ export function Navbar() {
     return fullName || user.email
   }
 
+  const getVisibleRoutes = () => {
+    if (user?.role === 'admin') {
+      return [...ROUTES.shared, ...ROUTES.adminOnly]
+    }
+    return [...ROUTES.shared, ...ROUTES.tenantOnly]
+  }
+
+  const visibleRoutes = getVisibleRoutes()
+
   if (!user) return null
 
   return (
@@ -54,29 +70,19 @@ export function Navbar() {
         <div className="relative flex justify-between h-16">
           {/* Left Side - Navigation Links */}
           <div className="flex items-center space-x-8">
-            <Link
-              to="/"
-              className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors ${
-                location.pathname === '/'
-                  ? 'border-primary-500 text-primary-400'
-                  : 'border-transparent text-slate-400 hover:text-slate-300'
-              }`}
-            >
-              Documents
-            </Link>
-
-            {user.role === 'admin' && (
+            {visibleRoutes.map(route => (
               <Link
-                to="/admin"
+                key={route.path}
+                to={route.path}
                 className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors ${
-                  location.pathname === '/admin'
+                  location.pathname === route.path
                     ? 'border-primary-500 text-primary-400'
                     : 'border-transparent text-slate-400 hover:text-slate-300'
                 }`}
               >
-                Admin
+                {route.label}
               </Link>
-            )}
+            ))}
           </div>
 
           {/* Center - Current Tenant Name */}

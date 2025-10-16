@@ -3,6 +3,7 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import { LoginPage } from './pages/LoginPage'
 import { DocumentPage } from './pages/DocumentPage'
 import { AdminPage } from './pages/AdminPage'
+import { ClusterVisualizationPage } from './pages/ClusterVisualizationPage'
 
 function App() {
   return (
@@ -21,6 +22,14 @@ function App() {
         element={
           <ProtectedRoute requireRole="admin">
             <AdminPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/cluster-visualization"
+        element={
+          <ProtectedRoute requireRole="admin">
+            <ClusterVisualizationPage />
           </ProtectedRoute>
         }
       />

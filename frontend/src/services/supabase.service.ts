@@ -1,5 +1,4 @@
 import { supabase } from '../config/supabase.config'
-import type { FileUpload } from '../types/file.types'
 
 export const fileService = {
 

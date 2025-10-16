@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { QUERY_KEYS } from '../utils/constants'
 import { supabase } from '../config/supabase.config'
 import type { FileUpload } from '../types/file.types'
+import { sanitizeFilename } from '../utils/file-helpers'
 
 export const useGetAllFiles = () => {
   const { currentTenant } = useAuth()
@@ -79,7 +80,8 @@ export const useFilesMutations = () => {
         throw new Error('No tenant selected')
       }
 
-      const fileName = `${currentTenant.id}/${file.name}`
+      const sanitizedName = sanitizeFilename(file.name)
+      const fileName = `${currentTenant.id}/${sanitizedName}`
 
       console.log('Starting upload:', { fileName, currentTenant })
 

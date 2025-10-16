@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import api_router
 from app.core.seed_data import seed_database
 from app.core.webhooks import configure_webhooks
+from app.utils.queue import processing_queue
 from app.utils.supabase_check import wait_for_supabase
 
 
@@ -17,6 +18,7 @@ async def lifespan(app: FastAPI):
     await wait_for_supabase()
 
     await configure_webhooks()
+    await processing_queue.start_worker()
 
     if os.getenv("ENVIRONMENT") == "development":
         await seed_database()

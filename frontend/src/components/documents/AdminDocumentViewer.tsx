@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { useGetSignedUrl } from '../../hooks/files.hooks'
 import { useRetryExtract } from '../../hooks/preprocess.hooks'
 import { PDFDisplay } from './PDFDisplay'
@@ -17,7 +17,6 @@ export function AdminDocumentViewer({
 }: AdminDocumentViewerProps) {
   const { signedUrl, signedUrlIsLoading } = useGetSignedUrl(file)
   const { retryExtract, isRetryingExtract } = useRetryExtract()
-  const [showRetrySuccess, setShowRetrySuccess] = useState(false)
 
   useEffect(() => {
     const modalElement = document.querySelector(
@@ -41,8 +40,6 @@ export function AdminDocumentViewer({
   const handleRetryExtract = async () => {
     try {
       await retryExtract(file.id)
-      setShowRetrySuccess(true)
-      setTimeout(() => setShowRetrySuccess(false), 3000)
     } catch (error) {
       console.error('Retry extraction failed:', error)
     }
@@ -63,11 +60,6 @@ export function AdminDocumentViewer({
           </h2>
 
           <div className="flex items-center space-x-2">
-            {showRetrySuccess && (
-              <span className="text-sm text-green-400">
-                Extraction restarted!
-              </span>
-            )}
             <Button
               onClick={handleRetryExtract}
               variant="secondary"

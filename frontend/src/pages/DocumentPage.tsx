@@ -1,36 +1,37 @@
 import { useState, useEffect } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import { Layout } from '../components/layout/Layout'
 import { useAuth } from '../contexts/AuthContext'
 import { useGetAllFiles, useFilesMutations } from '../hooks/files.hooks'
 import { useGetAllExtractedFiles } from '../hooks/extracted-file.hooks'
-import { useRealtimeSubscription } from '../hooks/useRealtimeSubscription'
 import { useFileParam } from '../hooks/useUrlState'
 import { Modal } from '../components/ui/Modal'
 import { Button } from '../components/ui/Button'
 import { StatusBadge } from '../components/ui/StatusBadge'
 import { ViewPDFModal } from '../components/ui/ViewPDFModal'
 import { AdminDocumentViewer } from '../components/documents/AdminDocumentViewer'
-import { QUERY_KEYS } from '../utils/constants'
 import type { FileUpload } from '../types/file.types'
+import { useRealtimeSubscription } from '../hooks/useRealtimeSubscription'
+import { QUERY_KEYS } from '../utils/constants'
+import { useQueryClient } from '@tanstack/react-query'
 
 export function DocumentPage() {
   const { user } = useAuth()
-  const queryClient = useQueryClient()
   const { files, filesIsLoading } = useGetAllFiles()
   const { extractedFiles } = useGetAllExtractedFiles()
   const { uploadFile, deleteFile, isUploadingFile, isDeletingFile } =
     useFilesMutations()
-
+  const queryClient = useQueryClient()
   const [fileParam, setFileParam] = useFileParam()
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [viewingFile, setViewingFile] = useState<FileUpload | null>(null)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [uploadStatuses, setUploadStatuses] = useState<
+    Map<string, { status: 'uploading' | 'success' | 'error'; error?: string }>
+  >(new Map())
 
   const isTenant = user?.role === 'tenant'
   const isAdmin = user?.role === 'admin'
 
-  // Realtime subscription
   useRealtimeSubscription({
     table: 'extracted_files',
     event: '*',
@@ -64,12 +65,40 @@ export function DocumentPage() {
   const handleUpload = async () => {
     if (selectedFiles.length === 0) return
 
+    // Initialize all as uploading
+    const initialStatuses = new Map(
+      selectedFiles.map(file => [file.name, { status: 'uploading' as const }])
+    )
+    setUploadStatuses(initialStatuses)
+
+    // Upload sequentially
     for (const file of selectedFiles) {
-      await uploadFile(file)
+      try {
+        await uploadFile(file)
+        setUploadStatuses(prev => {
+          const next = new Map(prev)
+          next.set(file.name, { status: 'success' })
+          return next
+        })
+      } catch (error) {
+        setUploadStatuses(prev => {
+          const next = new Map(prev)
+          next.set(file.name, {
+            status: 'error',
+            error: error instanceof Error ? error.message : 'Upload failed',
+          })
+          return next
+        })
+      }
     }
 
-    setSelectedFiles([])
+    // Don't auto-close, let user review results
+  }
+
+  const handleCloseUploadModal = () => {
     setIsUploadModalOpen(false)
+    setSelectedFiles([])
+    setUploadStatuses(new Map())
   }
 
   const removeFile = (index: number) => {
@@ -104,7 +133,6 @@ export function DocumentPage() {
             </Button>
           )}
         </div>
-
         {/* Files List */}
         <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
           {filesIsLoading ? (
@@ -186,91 +214,131 @@ export function DocumentPage() {
             </div>
           )}
         </div>
-
         {/* Upload Modal */}
         {isTenant && (
           <Modal
             isOpen={isUploadModalOpen}
-            onClose={() => {
-              setIsUploadModalOpen(false)
-              setSelectedFiles([])
-            }}
+            onClose={handleCloseUploadModal}
             title="Upload Files"
           >
             <div className="space-y-4">
-              <input
-                type="file"
-                multiple
-                onChange={handleFileSelect}
-                className="block w-full text-sm text-slate-300
-                  file:mr-4 file:py-2 file:px-4
-                  file:rounded-lg file:border-0
-                  file:text-sm file:font-medium
-                  file:bg-primary-500 file:text-white
-                  hover:file:bg-primary-600
-                  file:cursor-pointer cursor-pointer"
-              />
+              {uploadStatuses.size === 0 ? (
+                <>
+                  <input
+                    type="file"
+                    multiple
+                    onChange={handleFileSelect}
+                    className="block w-full text-sm text-slate-300
+              file:mr-4 file:py-2 file:px-4
+              file:rounded-lg file:border-0
+              file:text-sm file:font-medium
+              file:bg-primary-500 file:text-white
+              hover:file:bg-primary-600
+              file:cursor-pointer cursor-pointer"
+                  />
 
-              {selectedFiles.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-sm text-slate-400">
-                    {selectedFiles.length} file(s) selected:
-                  </p>
-                  <div className="max-h-48 overflow-y-auto space-y-2">
-                    {selectedFiles.map((file, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-2 bg-slate-700 rounded text-sm"
-                      >
-                        <span className="text-slate-300 truncate">
-                          {file.name}
-                        </span>
-                        <button
-                          onClick={() => removeFile(index)}
-                          className="text-slate-400 hover:text-slate-200 ml-2"
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                  {selectedFiles.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-slate-400">
+                        {selectedFiles.length} file(s) selected:
+                      </p>
+                      <div className="max-h-48 overflow-y-auto space-y-2">
+                        {selectedFiles.map((file, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between p-2 bg-slate-700 rounded text-sm"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M6 18L18 6M6 6l12 12"
-                            />
-                          </svg>
-                        </button>
+                            <span className="text-slate-300 truncate">
+                              {file.name}
+                            </span>
+                            <button
+                              onClick={() => removeFile(index)}
+                              className="text-slate-400 hover:text-slate-200 ml-2"
+                            >
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M6 18L18 6M6 6l12 12"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                    </div>
+                  )}
 
-              <div className="flex justify-end space-x-3">
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setIsUploadModalOpen(false)
-                    setSelectedFiles([])
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleUpload}
-                  disabled={selectedFiles.length === 0}
-                  loading={isUploadingFile}
-                >
-                  Upload{' '}
-                  {selectedFiles.length > 0 && `(${selectedFiles.length})`}
-                </Button>
-              </div>
+                  <div className="flex justify-end space-x-3">
+                    <Button
+                      variant="secondary"
+                      onClick={handleCloseUploadModal}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleUpload}
+                      disabled={selectedFiles.length === 0}
+                    >
+                      Upload{' '}
+                      {selectedFiles.length > 0 && `(${selectedFiles.length})`}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <p className="text-sm text-slate-400">Upload Progress:</p>
+                    <div className="max-h-64 overflow-y-auto space-y-2">
+                      {selectedFiles.map(file => {
+                        const fileStatus = uploadStatuses.get(file.name)
+                        return (
+                          <div
+                            key={file.name}
+                            className="p-3 bg-slate-700 rounded space-y-1"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-slate-300 text-sm truncate flex-1">
+                                {file.name}
+                              </span>
+                              {fileStatus && (
+                                <StatusBadge
+                                  status={fileStatus.status}
+                                  label={
+                                    fileStatus.status === 'uploading'
+                                      ? 'Uploading'
+                                      : fileStatus.status === 'success'
+                                        ? 'Success'
+                                        : 'Failed'
+                                  }
+                                />
+                              )}
+                            </div>
+                            {fileStatus?.error && (
+                              <p className="text-xs text-red-400">
+                                {fileStatus.error}
+                              </p>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <Button onClick={handleCloseUploadModal}>Close</Button>
+                  </div>
+                </>
+              )}
             </div>
           </Modal>
-        )}
+        )}{' '}
       </div>
 
       {/* Conditional Modal Rendering */}

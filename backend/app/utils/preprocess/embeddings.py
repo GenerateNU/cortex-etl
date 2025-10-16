@@ -37,10 +37,21 @@ def _json_to_text(data: dict) -> str:
     # Main content
     if "result" in data:
         result = data["result"]
-        for key, value in result.items():
-            if isinstance(value, (dict, list)):
-                parts.append(f"{key}: {json.dumps(value)}")
-            else:
-                parts.append(f"{key}: {value}")
+
+        # Handle dict result
+        if isinstance(result, dict):
+            for key, value in result.items():
+                if isinstance(value, dict | list):
+                    parts.append(f"{key}: {json.dumps(value)}")
+                else:
+                    parts.append(f"{key}: {value}")
+
+        # Handle list result
+        elif isinstance(result, list):
+            parts.append(f"Items: {json.dumps(result)}")
+
+        # Fallback for other types
+        else:
+            parts.append(f"Content: {str(result)}")
 
     return "\n".join(parts)

@@ -1,31 +1,22 @@
 import os
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Header, HTTPException
 
-from app.schemas.preprocess_schemas import (
-    PreprocessSuccessResponse,
-)
-from app.services.preprocess_service import PreprocessService, get_preprocess_service
+from app.utils.queue import processing_queue
 
 router = APIRouter(prefix="/webhooks", tags=["Webhooks"])
 
 
-@router.post("/extract_data/{file_upload_id}", response_model=PreprocessSuccessResponse)
+@router.post("/extract_data/{file_upload_id}")
 async def handle_extract_webhook(
     file_upload_id: UUID,
     x_webhook_secret: str = Header(None, alias="X-Webhook-Secret"),
-    preprocess_service: PreprocessService = Depends(get_preprocess_service),
-) -> PreprocessSuccessResponse:
-    """Webhook triggered on PDF uploads"""
-
-    # Verify signature
+) -> dict:
     if x_webhook_secret != os.getenv("WEBHOOK_SECRET"):
-        raise HTTPException(status_code=401, detail="Invalid webhook signature")
+        raise HTTPException(status_code=401)
 
-    # Process PDF
-    extraction_id = await preprocess_service.process_pdf_upload(file_upload_id)
+    # Enqueue instead of processing
+    await processing_queue.enqueue(file_upload_id)
 
-    return PreprocessSuccessResponse(
-        file_upload_id=file_upload_id, extraction_id=extraction_id
-    )
+    return {"status": "queued", "file_upload_id": str(file_upload_id)}
