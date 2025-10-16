@@ -1,21 +1,16 @@
 {
     "scripts": {
-        "init:dev": "npm install && node init-dev.js",
-        "supabase:start": "npx supabase start",
-        "supabase:stop": "npx supabase stop",
-        "supabase:reset": "npx supabase db reset",
-        "supabase:status": "npx supabase status",
-        "dev:start": "npm run init:dev && docker-compose up -d",
-        "dev": "npm run init:dev && docker-compose up",
-        "dev:build": "npm run init:dev && docker-compose build --no-cache && docker-compose up",
-        "dev:stop": "docker-compose down && npm run supabase:stop",
-        "dev:logs": "docker-compose logs -f",
-        "docker:clean": "npx supabase stop --no-backup && docker-compose down -v && docker container prune -f && docker network prune -f",
-        "fresh": "npm run docker:clean && npm run dev:build"
+        "init-dev": "npm install && node init-dev.js",
+        "build": "docker-compose build --no-cache",
+        "up": "npm run init-dev && docker-compose up -d",
+        "down": "npx supabase stop && docker-compose down",
+        "rebuild": "docker-compose down -v && npm run build && npm run up",
+        "reset": "npx supabase db reset",
+        "hard-clean": "npx supabase stop --no-backup && docker-compose down -v && docker container prune -f && docker network prune -f",
+        "fresh": "npm run hard-clean && npm run build && npm run up"
     },
     "devDependencies": {
-        "supabase": "2.47.2",
-        "dotenv": "^17.2.3"
+        "supabase": "2.47.2"
     },
     "dependencies": {
         "dotenv": "^17.2.3"

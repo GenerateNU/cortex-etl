@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.core.supabase import supabase
+from app.routes.preprocess_routes import router as preprocess_router
 from app.routes.process_routes import router as process_router
 from app.routes.webhook_routes import router as webhook_router
 
@@ -16,5 +17,6 @@ async def health_check():
         return {"status": "unhealthy", "database": "disconnected", "error": str(e)}
 
 
+api_router.include_router(preprocess_router)
 api_router.include_router(process_router)
 api_router.include_router(webhook_router)

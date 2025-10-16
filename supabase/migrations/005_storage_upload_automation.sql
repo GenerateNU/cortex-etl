@@ -63,17 +63,10 @@ BEGIN
 
   -- Fire webhook asynchronously
   PERFORM net.http_post(
-    url := webhook_url,
+    url := webhook_url || '/' || file_upload_id,
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
       'X-Webhook-Secret', COALESCE(webhook_secret, '')
-    ),
-    body := jsonb_build_object(
-      'type', 'pdf.uploaded',
-      'file_upload_id', file_upload_id,
-      'tenant_id', tenant_id_val,
-      'filename', filename,
-      'storage_path', NEW.name
     ),
     timeout_milliseconds := 5000
   );
