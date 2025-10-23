@@ -1,17 +1,23 @@
 import json
 from uuid import UUID
 
-from app.core.supabase import supabase
+from fastapi import Depends
+from supabase import AsyncClient
+
+from app.core.supabase import get_async_supabase
 from app.schemas.classification_schemas import Classification, ExtractedFile
 
 
 class ClassificationService:
-    def get_extracted_files(self, tenant_id: UUID) -> list[ExtractedFile]:
+    def __init__(self, supabase: AsyncClient):
+        self.supabase = supabase
+
+    async def get_extracted_files(self, tenant_id: UUID) -> list[ExtractedFile]:
         """
         Query extracted files with embeddings joined to file uploads
         """
-        response = (
-            supabase.table("extracted_files")
+        response = await (
+            self.supabase.table("extracted_files")
             .select(
                 "id, source_file_id, extracted_data, embedding, file_uploads!inner(id, type, name, tenant_id, classifications(id, tenant_id, name))"
             )
@@ -125,6 +131,8 @@ class ClassificationService:
 
         return len(response.data) > 0
 
-
-def get_classification_service():
-    return ClassificationService()
+def get_classification_service(
+    supabase: AsyncClient = Depends(get_async_supabase),
+) -> ClassificationService:
+    """Instantiates a ClassificationService object in route parameters"""
+    return ClassificationService(supabase)

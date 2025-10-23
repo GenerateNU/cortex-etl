@@ -6,8 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import api_router
 from app.core.seed_data import seed_database
+from app.core.supabase import get_async_supabase
 from app.core.webhooks import configure_webhooks
-from app.utils.queue import processing_queue
+from app.utils.preprocess.preprocessing_queue import init_queue
 from app.utils.supabase_check import wait_for_supabase
 
 
@@ -15,13 +16,16 @@ from app.utils.supabase_check import wait_for_supabase
 async def lifespan(app: FastAPI):
     # Startup
     print("LIFESPAN STARTING", flush=True)
-    await wait_for_supabase()
+    supabase = await get_async_supabase()
 
-    await configure_webhooks()
-    await processing_queue.start_worker()
+    await wait_for_supabase(supabase)
+
+    await configure_webhooks(supabase)
+
+    await init_queue(supabase)
 
     if os.getenv("ENVIRONMENT") == "development":
-        await seed_database()
+        await seed_database(supabase)
 
     yield
     # Shutdown (if needed)

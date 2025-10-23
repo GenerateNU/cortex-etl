@@ -1,9 +1,9 @@
 import os
 
-from app.core.supabase import supabase
+from supabase import AsyncClient
 
 
-async def configure_webhooks():
+async def configure_webhooks(supabase: AsyncClient):
     """Configure webhook settings in database on startup"""
     webhook_base_url = os.getenv("WEBHOOK_BASE_URL")
     webhook_secret = os.getenv("WEBHOOK_SECRET")
@@ -16,7 +16,7 @@ async def configure_webhooks():
     try:
         webhook_url = f"{webhook_base_url}/api/webhooks/extract_data"
 
-        supabase.rpc(
+        await supabase.rpc(
             "update_webhook_config", {"url": webhook_url, "secret": webhook_secret}
         ).execute()
 

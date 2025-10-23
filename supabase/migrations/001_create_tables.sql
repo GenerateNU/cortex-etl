@@ -31,11 +31,14 @@ CREATE TABLE IF NOT EXISTS file_uploads (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TYPE extraction_status AS ENUM ('queued', 'processing', 'completed', 'failed');
+
 -- Create extracted_files table
 CREATE TABLE IF NOT EXISTS extracted_files (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     source_file_id UUID NOT NULL REFERENCES file_uploads(id) ON DELETE CASCADE,
-    extracted_data JSONB NOT NULL,
+    status extraction_status NOT NULL,
+    extracted_data JSONB,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );

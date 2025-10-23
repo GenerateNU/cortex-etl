@@ -8,12 +8,12 @@ export const useRetryExtract = () => {
   const { user } = useAuth()
   const queryClient = useQueryClient()
 
-  if (user?.role !== 'admin') {
-    throw new Error('Only admins can retry extraction')
-  }
-
   const retryExtract = useMutation({
     mutationFn: async (fileUploadId: string): Promise<ExtractionSuccess> => {
+      if (user?.role !== 'admin') {
+        throw new Error('Only admins can retry extraction')
+      }
+
       const { data } = await api.post(
         `/preprocess/retry_extraction/${fileUploadId}`
       )

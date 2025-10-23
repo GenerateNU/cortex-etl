@@ -1,7 +1,7 @@
 import React from 'react'
 import { useAuth } from '../../contexts/AuthContext'
-import { LoginForm } from './LoginForm'
 import { LoadingSpinner } from '../common/LoadingSpinner'
+import { Navigate } from 'react-router-dom'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -20,7 +20,7 @@ export function ProtectedRoute({ children, requireRole }: ProtectedRouteProps) {
   }
 
   if (!user) {
-    return <LoginForm />
+    return <Navigate to="/login" replace />
   }
 
   if (requireRole && user.role !== requireRole) {

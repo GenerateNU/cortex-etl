@@ -2,7 +2,7 @@ import base64
 import os
 from enum import Enum
 
-from litellm import aembedding, completion
+from litellm import acompletion, aembedding
 from litellm.types.utils import EmbeddingResponse, ModelResponse
 
 
@@ -87,7 +87,7 @@ class LLMClient:
         # Return single embedding if single input
         return embeddings[0] if isinstance(input_text, str) else embeddings
 
-    def chat(
+    async def chat(
         self,
         content: str,
         pdf_bytes: bytes | None = None,
@@ -132,7 +132,7 @@ class LLMClient:
         else:
             messages.append({"role": "user", "content": content})
 
-        return completion(
+        return await acompletion(
             model=self.model.value,
             messages=messages,
             temperature=temperature,
