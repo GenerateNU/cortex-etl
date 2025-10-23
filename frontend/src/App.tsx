@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import { LoginPage } from './pages/LoginPage'
 import { DocumentPage } from './pages/DocumentPage'
@@ -33,6 +33,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="/*" element={<Navigate to="/" />} />
     </Routes>
   )
 }

@@ -1,4 +1,4 @@
-from app.core.supabase import supabase
+from supabase import AsyncClient
 
 
 def print_credentials():
@@ -17,9 +17,9 @@ def print_credentials():
     print("=" * 50, flush=True)
 
 
-async def seed_database():
+async def seed_database(supabase: AsyncClient):
     # Check if already seeded
-    existing = supabase.table("tenants").select("count", count="exact").execute()
+    existing = await supabase.table("tenants").select("count", count="exact").execute()
     if existing.count > 0:
         print("Database already seeded", flush=True)
         print_credentials()
@@ -31,7 +31,7 @@ async def seed_database():
     tenant_ids = {}
     for company in companies:
         print(f"Creating tenant: {company}...", flush=True)
-        tenant = (
+        tenant = await (
             supabase.table("tenants")
             .insert({"name": company, "is_active": True})
             .execute()
@@ -41,7 +41,7 @@ async def seed_database():
 
     # Create admin user
     print("Creating admin user...", flush=True)
-    admin_user = supabase.auth.admin.create_user(
+    admin_user = await supabase.auth.admin.create_user(
         {
             "email": "admin@cortex.com",
             "password": "password",
@@ -50,15 +50,19 @@ async def seed_database():
     )
     print(f"Created admin user: {admin_user.user.id}", flush=True)
 
-    supabase.table("profiles").insert(
-        {
-            "id": admin_user.user.id,
-            "first_name": "Admin",
-            "last_name": "User",
-            "role": "admin",
-            "tenant_id": None,
-        }
-    ).execute()
+    await (
+        supabase.table("profiles")
+        .insert(
+            {
+                "id": admin_user.user.id,
+                "first_name": "Admin",
+                "last_name": "User",
+                "role": "admin",
+                "tenant_id": None,
+            }
+        )
+        .execute()
+    )
 
     # Create one user per company
     tenant_users = [
@@ -70,7 +74,7 @@ async def seed_database():
 
     for email, first_name, last_name, company in tenant_users:
         print(f"Creating user: {email}...", flush=True)
-        user = supabase.auth.admin.create_user(
+        user = await supabase.auth.admin.create_user(
             {
                 "email": email,
                 "password": "password",
@@ -79,15 +83,19 @@ async def seed_database():
         )
         print(f"Created user: {user.user.id}", flush=True)
 
-        supabase.table("profiles").insert(
-            {
-                "id": user.user.id,
-                "first_name": first_name,
-                "last_name": last_name,
-                "role": "tenant",
-                "tenant_id": tenant_ids[company],
-            }
-        ).execute()
+        await (
+            supabase.table("profiles")
+            .insert(
+                {
+                    "id": user.user.id,
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "role": "tenant",
+                    "tenant_id": tenant_ids[company],
+                }
+            )
+            .execute()
+        )
 
     print("Database seeded successfully", flush=True)
     print_credentials()

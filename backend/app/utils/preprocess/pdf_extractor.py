@@ -13,13 +13,15 @@ model.set_system_prompt(
 )
 
 
-def extract_pdf_data(
+async def extract_pdf_data(
     pdf_bytes: bytes,
     file_name: str,
-    llm_model: ModelType = ModelType.GEMINI_PRO,
+    llm_model: ModelType = ModelType.GEMINI_FLASH,
 ) -> dict:
     model.set_model(llm_model)
-    response = model.chat("Extract tables", pdf_bytes=pdf_bytes, json_response=True)
+    response = await model.chat(
+        "Extract tables", pdf_bytes=pdf_bytes, json_response=True
+    )
 
     text = response.choices[0].message.content.strip()
 

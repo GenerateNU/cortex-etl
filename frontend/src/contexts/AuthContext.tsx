@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    return {
+    const retrieved_user: User = {
       id: user.id,
       email: user.email!,
       first_name: profile?.first_name || '',
@@ -61,6 +61,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       tenant: tenant,
       role: profile?.role || 'tenant',
     }
+
+    console.log(retrieved_user)
+
+    return retrieved_user
   }
 
   const onAuthStateChange = (callback: (user: User | null) => void) => {

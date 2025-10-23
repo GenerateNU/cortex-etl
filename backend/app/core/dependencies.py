@@ -1,9 +1,12 @@
-from fastapi import HTTPException, Request
+from fastapi import Depends, HTTPException, Request
+from supabase import AsyncClient
 
-from app.core.supabase import supabase
+from app.core.supabase import get_async_supabase
 
 
-async def get_current_user(request: Request):
+async def get_current_user(
+    request: Request, supabase: AsyncClient = Depends(get_async_supabase)
+):
     auth_header = request.headers.get("Authorization")
 
     if not auth_header or not auth_header.startswith("Bearer "):
@@ -12,13 +15,13 @@ async def get_current_user(request: Request):
     token = auth_header.split(" ")[1]
 
     try:
-        user_response = supabase.auth.get_user(token)
+        user_response = await supabase.auth.get_user(token)
         user = user_response.user
 
         if not user:
             raise HTTPException(status_code=401, detail="Invalid token")
 
-        profile_result = (
+        profile_result = await (
             supabase.table("profiles")
             .select("role, tenant_id")
             .eq("id", user.id)
@@ -40,8 +43,10 @@ async def get_current_user(request: Request):
         ) from e
 
 
-async def get_current_admin(request: Request):
-    user = await get_current_user(request)
+async def get_current_admin(
+    request: Request, supabase: AsyncClient = Depends(get_async_supabase)
+):
+    user = await get_current_user(request, supabase)
 
     if user["user_metadata"].get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")

@@ -10,7 +10,9 @@ from app.schemas.classification_schemas import (
 )
 
 
-def extract_embedding_data(extracted_files: list[ExtractedFile]) -> EmbeddingDataset:
+async def extract_embedding_data(
+    extracted_files: list[ExtractedFile],
+) -> EmbeddingDataset:
     """Extract fields from ExtractedFile list into structured dataset"""
     return EmbeddingDataset(
         extracted_file_ids=[ef.extracted_file_id for ef in extracted_files],
@@ -21,7 +23,7 @@ def extract_embedding_data(extracted_files: list[ExtractedFile]) -> EmbeddingDat
     )
 
 
-def reduce_to_visualization(dataset: EmbeddingDataset) -> VisualizationResponse:
+async def reduce_to_visualization(dataset: EmbeddingDataset) -> VisualizationResponse:
     # UMAP reduction
     reducer = UMAP(
         n_components=2,
@@ -74,7 +76,9 @@ def reduce_to_visualization(dataset: EmbeddingDataset) -> VisualizationResponse:
     )
 
 
-def create_empty_visualization(dataset: EmbeddingDataset) -> VisualizationResponse:
+async def create_empty_visualization(
+    dataset: EmbeddingDataset,
+) -> VisualizationResponse:
     documents = [
         DocumentPoint(
             id=dataset.extracted_file_ids[0],

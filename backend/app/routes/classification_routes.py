@@ -28,21 +28,21 @@ async def visualize_clustering(
     Query param: ?tenant_id=xxx (optional for tenant filtering)
     """
     try:
-        extracted_files: list[ExtractedFile] = (
-            classificationService.get_extracted_files(tenant_id)
-        )
+        extracted_files: list[
+            ExtractedFile
+        ] = await classificationService.get_extracted_files(tenant_id)
 
         if not extracted_files or len(extracted_files) == 0:
             raise HTTPException(
                 status_code=404, detail="No documents with embeddings found"
             )
 
-        dataset = extract_embedding_data(extracted_files)
+        dataset = await extract_embedding_data(extracted_files)
 
         if len(extracted_files) < 2:
-            return create_empty_visualization(dataset)
+            return await create_empty_visualization(dataset)
 
-        visualizationResponse = reduce_to_visualization(dataset)
+        visualizationResponse = await reduce_to_visualization(dataset)
 
         return visualizationResponse
 

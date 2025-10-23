@@ -1,9 +1,9 @@
 import asyncio
 
-from app.core.supabase import supabase
+from supabase import AsyncClient
 
 
-async def wait_for_supabase():
+async def wait_for_supabase(supabase: AsyncClient):
     """Wait for Supabase to be ready for the operations we actually need"""
     max_retries = 30
 
@@ -12,17 +12,17 @@ async def wait_for_supabase():
             # Test the exact operations that will be used in seeding
 
             # 1. Test database table access (this was working)
-            supabase.table("tenants").select("count", count="exact").execute()
+            await supabase.table("tenants").select("count", count="exact").execute()
             print("Database table access verified", flush=True)
 
             # 2. Test auth admin list (this was working in health check)
-            supabase.auth.admin.list_users(page=1, per_page=1)
+            await supabase.auth.admin.list_users(page=1, per_page=1)
             print("Auth admin list_users working", flush=True)
 
             # 3. Test the EXACT failing operation - creating a user
             # Try creating a test user and immediately deleting it
             try:
-                test_user = supabase.auth.admin.create_user(
+                test_user = await supabase.auth.admin.create_user(
                     {
                         "email": f"test-{attempt}@example.com",
                         "password": "test123456",
@@ -32,7 +32,7 @@ async def wait_for_supabase():
 
                 # If it worked, clean up the test user
                 if test_user.user:
-                    supabase.auth.admin.delete_user(test_user.user.id)
+                    await supabase.auth.admin.delete_user(test_user.user.id)
                     print(
                         "Auth admin create_user working - \
                         test user created and deleted",

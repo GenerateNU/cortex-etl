@@ -13,6 +13,7 @@ import type { FileUpload } from '../types/file.types'
 import { useRealtimeSubscription } from '../hooks/useRealtimeSubscription'
 import { QUERY_KEYS } from '../utils/constants'
 import { useQueryClient } from '@tanstack/react-query'
+import { useRetryExtract } from '../hooks/preprocess.hooks'
 
 export function DocumentPage() {
   const { user } = useAuth()
@@ -20,6 +21,7 @@ export function DocumentPage() {
   const { extractedFiles } = useGetAllExtractedFiles()
   const { uploadFile, deleteFile, isUploadingFile, isDeletingFile } =
     useFilesMutations()
+  const { retryExtract, isRetryingExtract } = useRetryExtract()
   const queryClient = useQueryClient()
   const [fileParam, setFileParam] = useFileParam()
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
@@ -51,9 +53,9 @@ export function DocumentPage() {
 
   const getFileStatus = (
     fileId: string
-  ): 'processing' | 'completed' | 'error' => {
+  ): 'queued' | 'processing' | 'completed' | 'failed' | 'error' => {
     const extracted = extractedFiles?.find(ef => ef.source_file_id === fileId)
-    return extracted ? 'completed' : 'processing'
+    return extracted ? extracted.status : 'error'
   }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -108,6 +110,14 @@ export function DocumentPage() {
   const handleDelete = async (fileId: string) => {
     if (confirm('Are you sure you want to delete this file?')) {
       await deleteFile(fileId)
+    }
+  }
+
+  const handleRetryExtract = async (file: FileUpload) => {
+    try {
+      await retryExtract(file.id)
+    } catch (error) {
+      console.error('Retry extraction failed:', error)
     }
   }
 
@@ -167,6 +177,17 @@ export function DocumentPage() {
                   </div>
                   <div className="flex items-center space-x-2">
                     {isAdmin && <StatusBadge status={getFileStatus(file.id)} />}
+                    {isAdmin && (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => handleRetryExtract(file)}
+                        loading={isRetryingExtract}
+                      >
+                        Retry
+                      </Button>
+                    )}
+                    {}
                     <Button
                       variant="primary"
                       size="sm"
@@ -285,6 +306,7 @@ export function DocumentPage() {
                     <Button
                       onClick={handleUpload}
                       disabled={selectedFiles.length === 0}
+                      loading={isUploadingFile}
                     >
                       Upload{' '}
                       {selectedFiles.length > 0 && `(${selectedFiles.length})`}
