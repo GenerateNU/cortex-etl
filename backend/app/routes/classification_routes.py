@@ -67,25 +67,25 @@ async def create_classifications(
     Analyze all extracted files and create or update classifications
     """
     try:
-        extracted_files: list[ExtractedFile] = (
-            classificationService.get_extracted_files(tenant_id)
-        )
+        extracted_files: list[
+            ExtractedFile
+        ] = await classificationService.get_extracted_files(tenant_id)
 
         if not extracted_files or len(extracted_files) == 0:
             raise HTTPException(
                 status_code=404, detail="No documents with embeddings found"
             )
 
-        initial_classifications: list[Classification] = (
-            classificationService.get_classifications(tenant_id)
-        )
+        initial_classifications: list[
+            Classification
+        ] = await classificationService.get_classifications(tenant_id)
 
         if not initial_classifications:
             raise HTTPException(
                 status_code=404, detail="Unable to get initial classifications"
             )
 
-        classification_names: list[str] = create_classifications_helper(
+        classification_names: list[str] = await create_classifications_helper(
             tenant_id,
             [classification.name for classification in initial_classifications],
         )
@@ -95,8 +95,10 @@ async def create_classifications(
                 status_code=500, detail="Unable to create classifications"
             )
 
-        classifications: list[Classification] = (
-            classificationService.set_classifications(tenant_id, classification_names)
+        classifications: list[
+            Classification
+        ] = await classificationService.set_classifications(
+            tenant_id, classification_names
         )
 
         if not classifications:

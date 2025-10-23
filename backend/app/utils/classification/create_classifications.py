@@ -1,7 +1,7 @@
 from app.schemas.classification_schemas import ExtractedFile
 
 
-def create_classifications(
+async def create_classifications(
     extracted_files: list[ExtractedFile],
     initialClassifications: list[str],
 ) -> list[str]:

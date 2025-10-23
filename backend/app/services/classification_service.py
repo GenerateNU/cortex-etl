@@ -51,12 +51,12 @@ class ClassificationService:
             for row in response.data
         ]
 
-    def get_classifications(self, tenant_id: UUID) -> list[Classification]:
+    async def get_classifications(self, tenant_id: UUID) -> list[Classification]:
         """
         Query classifications for the given tenant
         """
-        response = (
-            supabase.table("classifications")
+        response = await (
+            self.supabase.table("classifications")
             .select("*")
             .eq("tenant_id", str(tenant_id))
             .execute()
@@ -74,7 +74,7 @@ class ClassificationService:
             for row in response.data
         ]
 
-    def set_classifications(
+    async def set_classifications(
         self, tenant_id: UUID, classification_names: list[str]
     ) -> list[Classification]:
         """
@@ -82,7 +82,7 @@ class ClassificationService:
         Files linked to deleted classifications will have their classification_id set to NULL.
         """
         # Get existing classifications
-        existing = self.get_classifications(tenant_id)
+        existing = await self.get_classifications(tenant_id)
         existing_names = {c.name for c in existing}
         existing_by_name = {c.name: c for c in existing}
 
@@ -94,9 +94,13 @@ class ClassificationService:
 
         # Create new classifications
         if to_create:
-            supabase.table("classifications").insert(
-                [{"tenant_id": str(tenant_id), "name": name} for name in to_create]
-            ).execute()
+            await (
+                self.supabase.table("classifications")
+                .insert(
+                    [{"tenant_id": str(tenant_id), "name": name} for name in to_create]
+                )
+                .execute()
+            )
 
         # Delete removed classifications
         if to_delete:
@@ -105,31 +109,40 @@ class ClassificationService:
             ]
 
             # First, unlink files
-            supabase.table("file_uploads").update({"classification_id": None}).in_(
-                "classification_id", ids_to_delete
-            ).execute()
+            await (
+                self.supabase.table("file_uploads")
+                .update({"classification_id": None})
+                .in_("classification_id", ids_to_delete)
+                .execute()
+            )
 
             # Then delete classifications
-            supabase.table("classifications").delete().in_(
-                "id", ids_to_delete
-            ).execute()
+            await (
+                self.supabase.table("classifications")
+                .delete()
+                .in_("id", ids_to_delete)
+                .execute()
+            )
 
         # Return updated list
-        return self.get_classifications(tenant_id)
+        return await self.get_classifications(tenant_id)
 
-    def classify_file(self, file_upload_id: UUID, classification_id: UUID) -> bool:
+    async def classify_file(
+        self, file_upload_id: UUID, classification_id: UUID
+    ) -> bool:
         """
         Set the classification for a file upload.
         Returns True if successful, False otherwise.
         """
-        response = (
-            supabase.table("file_uploads")
+        response = await (
+            self.supabase.table("file_uploads")
             .update({"classification_id": str(classification_id)})
             .eq("id", str(file_upload_id))
             .execute()
         )
 
         return len(response.data) > 0
+
 
 def get_classification_service(
     supabase: AsyncClient = Depends(get_async_supabase),
