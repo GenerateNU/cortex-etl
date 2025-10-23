@@ -4,7 +4,7 @@ from app.core.litellm import EmbeddingModelType, LLMClient
 
 # Initialize client with Gemini embeddings
 client = LLMClient()
-client.set_embedding_model(EmbeddingModelType.GEMINI_TEXT_EMBEDDING)
+client.set_embedding_model(EmbeddingModelType.MODERNBERT_EMBED_BASE)
 
 
 async def generate_embedding(extracted_json: dict) -> list[float]:
