@@ -1,6 +1,6 @@
 export interface Tenant {
   id: string
   name: string
-  created_at: string
-  is_active: boolean
+  created_at: string | null
+  is_active: boolean | null
 }

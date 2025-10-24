@@ -20,14 +20,14 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     PRIMARY KEY (id)
 );
 
-CREATE TYPE file_type AS ENUM ('pdf', 'csv')
+CREATE TYPE file_type AS ENUM ('pdf', 'csv');
 
 CREATE TABLE IF NOT EXISTS file_uploads (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    type file_type NOT NULL
+    type file_type NOT NULL,
     name TEXT NOT NULL,
     bucket_id TEXT NOT NULL,
-    tenant_id UUID REFERENCES tenants(id),
+    tenant_id UUID  NOT NULL REFERENCES tenants(id),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

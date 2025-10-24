@@ -1,4 +1,4 @@
-import { useGetExtractedFile } from '../../hooks/extracted-file.hooks'
+import { useGetExtractedFile } from '../../hooks/extractedFile.hooks'
 import { JsonViewer } from '../ui/JsonViewer'
 import { StatusBadge } from '../ui/StatusBadge'
 

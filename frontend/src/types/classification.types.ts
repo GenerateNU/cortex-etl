@@ -1,5 +1,11 @@
 import type { Data } from 'plotly.js'
 
+export interface Classification {
+  classification_id: string
+  tenant_id: string
+  name: string
+}
+
 export interface DocumentPoint {
   id: string
   source_file_id: string

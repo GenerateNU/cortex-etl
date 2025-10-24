@@ -10,4 +10,4 @@ async def create_classifications(
     to iteratively set new classifications returning the final result
     """
     # TODO: Implement the logic that creates/edits classifications from the extracted files.
-    return []
+    return ["Request For Quote", "Product Specification", "Purchase Order", "Quote"]
