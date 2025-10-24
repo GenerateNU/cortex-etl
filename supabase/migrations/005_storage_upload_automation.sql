@@ -23,6 +23,7 @@ DECLARE
   webhook_secret TEXT;
   filename TEXT;
   file_upload_id UUID;
+  file_type_val file_type;  -- Use the enum type
 BEGIN
   -- Only process documents bucket
   IF NEW.bucket_id != 'documents' THEN
@@ -38,14 +39,24 @@ BEGIN
     RETURN NEW; -- Invalid format, skip
   END;
 
+  -- Determine file type from extension
+  IF filename ILIKE '%.pdf' THEN
+    file_type_val := 'pdf';
+  ELSIF filename ILIKE '%.csv' THEN
+    file_type_val := 'csv';
+  ELSE
+    -- Skip unsupported file types
+    RETURN NEW;
+  END IF;
+
   -- Create file_uploads entry and capture the ID
-  INSERT INTO file_uploads (name, bucket_id, tenant_id)
-  VALUES (filename, NEW.bucket_id, tenant_id_val)
+  INSERT INTO file_uploads (type, name, bucket_id, tenant_id)
+  VALUES (file_type_val, filename, NEW.bucket_id, tenant_id_val)
   ON CONFLICT DO NOTHING
   RETURNING id INTO file_upload_id;
 
   -- Only trigger webhook for PDFs
-  IF NOT filename LIKE '%.pdf' THEN
+  IF file_type_val != 'pdf' THEN
     RETURN NEW;
   END IF;
 

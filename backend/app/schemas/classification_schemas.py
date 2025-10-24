@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Any
 from uuid import UUID
 
@@ -5,15 +6,30 @@ import numpy as np
 from pydantic import BaseModel, Field
 
 
+class Classification(BaseModel):
+    """Tenant Isolated Classifications"""
+
+    classification_id: UUID
+    tenant_id: UUID
+    name: str
+
+
+class FileType(str, Enum):
+    PDF = "pdf"
+    CSV = "csv"
+
+
 class ExtractedFile(BaseModel):
     """Joined type of Extracted Files and Uploaded Files"""
 
     file_upload_id: UUID
+    type: FileType
     name: str
     tenant_id: UUID
     extracted_file_id: UUID
     extracted_data: dict[str, Any]
     embedding: list[float]
+    classification: Classification | None = None
 
 
 class EmbeddingDataset(BaseModel):
