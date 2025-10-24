@@ -18,7 +18,12 @@ export const useGetAllExtractedFiles = () => {
         .eq('file_uploads.tenant_id', currentTenant.id)
 
       if (error) throw error
-      return data || []
+      return data
+        ? data.map(extractedFile => ({
+            ...extractedFile,
+            embedding: extractedFile.embedding as unknown as number[] | null,
+          }))
+        : []
     },
     enabled: !!currentTenant?.id,
   })
@@ -41,7 +46,7 @@ export const useGetExtractedFile = (sourceFileId: string | undefined) => {
 
       const { data, error } = await supabase
         .from('extracted_files')
-        .select('*')
+        .select('*, file_uploads!inner(tenant_id)')
         .eq('source_file_id', sourceFileId)
         .single()
 
@@ -53,7 +58,10 @@ export const useGetExtractedFile = (sourceFileId: string | undefined) => {
         throw error
       }
 
-      return data
+      return {
+        ...data,
+        embedding: data.embedding as unknown as number[] | null,
+      }
     },
     enabled: !!sourceFileId && user?.role === 'admin',
   })

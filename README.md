@@ -39,24 +39,25 @@ This single command:
 
 ### Development Login Credentials
 
-| Email                        | Password | Role   |
-|------------------------------|----------|--------|
-| admin@cortex.com             | password | Admin  |
-| eng@kawasaki-robotics.com    | password | Tenant |
-| eng@kuka.com                 | password | Tenant |
-| eng@staubli.com              | password | Tenant |
-| eng@milara.com               | password | Tenant |
+| Email                     | Password | Role   |
+| ------------------------- | -------- | ------ |
+| admin@cortex.com          | password | Admin  |
+| eng@kawasaki-robotics.com | password | Tenant |
+| eng@kuka.com              | password | Tenant |
+| eng@staubli.com           | password | Tenant |
+| eng@milara.com            | password | Tenant |
 
 ## Available Commands
 
 ```bash
-npm run fresh    # Clean start (regenerates environment variables and cleans up containers)
-npm run dev         # Start containers
-npm run dev:build   # Start and build containers
-npm run docker:clean   # Clean up containers and volumes
-npm run dev:stop    # Stop all containers
-npm run dev:logs    # View container logs
-npm run supabase:reset    # Reset Supabase database and run migrations
+npm run init-dev    # installs all dev requirements and initializes supabase
+npm run build       # builds the frontend and backend containers
+npm run up          # starts supabase, the frontend, and the backend containers
+npm run down        # closes supabase, the frotend, and the backend containers
+npm run rebuild     # rebuilds the frontend and backend containers
+npm run reset       # clears supabase's database, reruns migrations, and reseeds
+npm run hard-clean  # downs everything and prunes all volumes
+npm run fresh       # hard resets and starts every service from scratch
 ```
 
 ## Project Structure

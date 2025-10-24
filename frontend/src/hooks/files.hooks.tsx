@@ -14,12 +14,25 @@ export const useGetAllFiles = () => {
       if (!currentTenant) return []
       const { data, error } = await supabase
         .from('file_uploads')
-        .select('*')
+        .select(
+          'id, type, name, tenant_id, created_at, classification:classifications(name)'
+        )
         .eq('tenant_id', currentTenant.id)
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      return data || []
+      return data
+        ? data.map(file_upload => ({
+            id: file_upload.id,
+            type: file_upload.type,
+            name: file_upload.name,
+            tenant_id: file_upload.tenant_id,
+            created_at: file_upload.created_at,
+            classification: file_upload.classification
+              ? file_upload.classification.name
+              : null,
+          }))
+        : []
     },
     enabled: !!currentTenant?.id,
   })
@@ -35,29 +48,30 @@ export const useGetAllFiles = () => {
 export const useGetFile = (fileUploadId: string) => {
   const { currentTenant } = useAuth()
 
-  if (!currentTenant) {
-    return {
-      files: undefined,
-      filesIsLoading: false,
-      filesError: null,
-      filesRefetch: async () => {
-        throw new Error('No tenant selected')
-      },
-    }
-  }
-
   const query = useQuery({
-    queryKey: [...QUERY_KEYS.FILES, currentTenant.id],
+    queryKey: [...QUERY_KEYS.FILES, currentTenant?.id],
     queryFn: async (): Promise<FileUpload> => {
+      if (!currentTenant) {
+        throw new Error('No tenant selected')
+      }
       const { data, error } = await supabase
         .from('file_uploads')
-        .select('*')
+        .select(
+          'id, type, name, tenant_id, created_at, classification:classifications(name)'
+        )
         .eq('tenant_id', currentTenant.id)
         .eq('id', fileUploadId)
         .single()
 
       if (error) throw error
-      return data
+      return {
+        id: data.id,
+        type: data.type,
+        name: data.name,
+        tenant_id: data.tenant_id,
+        created_at: data.created_at,
+        classification: data.classification ? data.classification.name : null,
+      }
     },
     enabled: !!currentTenant?.id,
   })

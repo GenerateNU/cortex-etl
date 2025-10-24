@@ -178,7 +178,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         subscription.unsubscribe()
       }
     }
-  }, [])
+  })
 
   const value: AuthContextType = {
     user,

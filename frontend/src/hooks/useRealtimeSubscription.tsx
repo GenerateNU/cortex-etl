@@ -21,6 +21,7 @@ export function useRealtimeSubscription({
     const channel = supabase
       .channel(`${table}_changes`)
       .on(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         'postgres_changes' as any,
         {
           event,
