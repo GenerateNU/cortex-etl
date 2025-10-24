@@ -16,7 +16,7 @@ model.set_system_prompt(
 async def extract_pdf_data(
     pdf_bytes: bytes,
     file_name: str,
-    llm_model: ModelType = ModelType.GEMINI_FLASH,
+    llm_model: ModelType = ModelType.GEMINI_PRO,
 ) -> dict:
     model.set_model(llm_model)
     response = await model.chat(
