@@ -91,6 +91,7 @@ async def create_classifications(
             )
 
         classification_names: list[str] = await create_classifications_helper(
+            classification_service,
             tenant_id,
             [classification.name for classification in initial_classifications],
         )

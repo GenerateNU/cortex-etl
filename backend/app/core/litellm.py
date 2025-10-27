@@ -26,7 +26,7 @@ class EmbeddingModelType(Enum):
     OPENAI_LARGE = "text-embedding-3-large"  # 3072 dimensions
 
     # BERT models
-    MODERNBERT_EMBED_BASE = "modernbert-embed-base" # 768 dimensions
+    # MODERNBERT_EMBED_BASE = "modernbert-embed-base" # 768 dimensions
 
 
 class LLMClient:

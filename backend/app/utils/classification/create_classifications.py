@@ -1,11 +1,14 @@
 from app.schemas.classification_schemas import ExtractedFile
+from uuid import UUID
 import hdbscan
 import numpy as np
 from app.core.litellm import EmbeddingModelType, LLMClient 
+from app.services.classification_service import ClassificationService
 
 
 async def create_classifications(
-    extracted_files: list[ExtractedFile],
+    classification_service: ClassificationService,
+    tenant_id: UUID,
     initialClassifications: list[str],
 ) -> list[str]:
     """
@@ -13,6 +16,12 @@ async def create_classifications(
     to iteratively set new classifications returning the final result
     """
     # TODO: Implement the logic that creates/edits classifications from the extracted files.
+
+    # Fetch extracted files for this tenant
+    extracted_files = await classification_service.get_extracted_files(tenant_id)
+
+    if not extracted_files or len(extracted_files) == 0:
+        return initialClassifications
 
     embeddings = []
     valid_files = []
@@ -31,7 +40,7 @@ async def create_classifications(
     clusterer = hdbscan.HDBSCAN(
         min_cluster_size = 3,      
         min_samples = 2,          
-        metric = 'cosine',    
+        metric = 'euclidean',    
         cluster_selection_method = 'eom' 
     )
 
@@ -93,19 +102,22 @@ def _extract_text_from_file(file: ExtractedFile) -> str:
     parts = []
     
     # Add filename
-    if file.file_name:
-        parts.append(f"Filename: {file.file_name}")
+    if file.name:
+        parts.append(f"Filename: {file.name}")
+
     
     # Add extracted content
-    if isinstance(file.result, dict):
-        for key, value in file.result.items():
+    if isinstance(file.extracted_data, dict):
+        for key, value in file.extracted_data.items():
             if isinstance(value, (dict, list)):
                 continue  # Skip nested structures for simplicity
             parts.append(f"{key}: {value}")
-    elif isinstance(file.result, list):
-        parts.append(f"Items: {', '.join(str(item) for item in file.result[:5])}")
+    elif isinstance(file.extracted_data, list):
+        parts.append(f"Items: {', '.join(str(item) for item in file.extracted_data[:5])}")
     else:
-        parts.append(str(file.result))
+        parts.append(str(file.extracted_data))
+
+        
     
     return " ".join(parts)
 
