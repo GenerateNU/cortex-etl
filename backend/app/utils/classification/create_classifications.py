@@ -4,6 +4,7 @@ import hdbscan
 import numpy as np
 from app.core.litellm import EmbeddingModelType, LLMClient 
 from app.services.classification_service import ClassificationService
+from sklearn.preprocessing import normalize
 
 
 async def create_classifications(
@@ -37,14 +38,19 @@ async def create_classifications(
     
     embeddings_array = np.array(embeddings)
 
+    # Normalize embeddings so that cosine similarity ≈ euclidean distance
+    normalized_embeddings = normalize(embeddings_array)  # L2 normalization  
+
     clusterer = hdbscan.HDBSCAN(
-        min_cluster_size = 3,      
-        min_samples = 2,          
+        min_cluster_size = 2,      
+        min_samples = 1,          
         metric = 'euclidean',    
         cluster_selection_method = 'eom' 
     )
 
-    cluster_labels = clusterer.fit_predict(embeddings_array)
+    cluster_labels = clusterer.fit_predict(normalized_embeddings)
+    # HDBSCAN marks outliers with -1
+    outlier_indices = np.where(cluster_labels == -1)[0]
 
     clusters = {}
 
@@ -86,11 +92,59 @@ async def create_classifications(
             print(f"  → Named: {category_name}")
         except Exception as e:
             print(f"  → Error generating name: {e}")
-            classification_names.append(f"Document Type {cluster_id}")
+            
+
+
+    # Map Cluster names to files
+    name_to_files = {}
+
+    for cluster_id, files_in_cluster in clusters.items():
+        try:
+            response = await client.chat(prompt, temperature=0.3, max_tokens=50)
+            category_name = response.choices[0].message.content.strip()
+            if not category_name:
+                category_name = f"Document Type {cluster_id}"
+        except Exception as e:
+            print(f"  → Error generating name: {e}")
+            category_name = f"Document Type {cluster_id}"
+
+        # Merge clusters by name
+        if category_name in name_to_files:
+            name_to_files[category_name].extend(files_in_cluster)
+        else:
+            name_to_files[category_name] = files_in_cluster
+        
+    
+
+    # Handle outliers individually
+    for i, file in enumerate(outliers):
+        print(f"Analyzing outlier {i} (single file)...")
+        text = _extract_text_from_file(file)[:500]  # Limit length
+        prompt = f"""Analyze this document and provide a concise classification name.
+
+    Document:
+
+    {text}
+
+    Respond with ONLY the category name."""
+    
+        try:
+            response = await client.chat(prompt, temperature=0.3, max_tokens=50)
+            category_name = response.choices[0].message.content.strip()
+            if category_name:
+                classification_names.append(category_name)
+                print(f"  → Outlier named: {category_name}")
+            else:
+                fallback_name = f"Document Type Outlier {i}"
+                classification_names.append(fallback_name)
+                print(f"  → Outlier named: {fallback_name}")
+        except Exception as e:
+            print(f"  → Error naming outlier: {e}")
+            fallback_name = f"Document Type Outlier {i}"
+            print(f"  → Outlier named: {fallback_name}")
 
     
-    
-    all_classifications = initialClassifications + classification_names
+    all_classifications = classification_names #+ initialClassifications
     final_classifications = list(set(all_classifications))  
     
     print(f"Final classifications: {final_classifications}")
@@ -110,7 +164,7 @@ def _extract_text_from_file(file: ExtractedFile) -> str:
     if isinstance(file.extracted_data, dict):
         for key, value in file.extracted_data.items():
             if isinstance(value, (dict, list)):
-                continue  # Skip nested structures for simplicity
+                continue  
             parts.append(f"{key}: {value}")
     elif isinstance(file.extracted_data, list):
         parts.append(f"Items: {', '.join(str(item) for item in file.extracted_data[:5])}")

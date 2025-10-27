@@ -2,13 +2,14 @@ FROM python:3.13.9-slim
 
 WORKDIR /app
 
-# Install system dependencies needed to build hdbscan and other scientific packages
+# Install system dependencies needed to build hdbscan, scipy, and support cosine distance
 RUN apt-get update && apt-get install -y \
     build-essential \
     python3-dev \
     gfortran \
     libopenblas-dev \
     liblapack-dev \
+    libatlas-base-dev \        
     && rm -rf /var/lib/apt/lists/*
 
 # Upgrade pip
@@ -23,4 +24,5 @@ COPY . .
 
 EXPOSE 8000
 
+# Run the app with reload enabled
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
