@@ -13,23 +13,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentTenant, setCurrentTenant] = useState<Tenant | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  const getCurrentUser = async (): Promise<User | null> => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) return null
+  const buildUserFromSession = async (authUser: any): Promise<User | null> => {
+    console.log('🔍 buildUserFromSession for:', authUser.email)
 
+    // Don't call supabase.auth.getUser() - we already have the authenticated user!
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('first_name, last_name, role, tenant_id')
-      .eq('id', user.id)
+      .eq('id', authUser.id)
       .single()
 
+    console.log('📋 Profile:', profile, 'Error:', profileError)
+
     if (profileError) {
-      console.error('Failed to fetch profile:', profileError)
+      console.error('❌ Profile fetch failed:', profileError)
       return {
-        id: user.id,
-        email: user.email!,
+        id: authUser.id,
+        email: authUser.email!,
         first_name: '',
         last_name: '',
         tenant: null,
@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Only fetch tenant if tenant_id exists
+    // Fetch tenant if needed
     let tenant = null
     if (profile?.tenant_id) {
       const { data: tenantData, error: tenantError } = await supabase
@@ -47,35 +47,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single()
 
       if (tenantError) {
-        console.error('Failed to fetch tenant:', tenantError)
+        console.error('❌ Tenant fetch failed:', tenantError)
       } else {
         tenant = tenantData
+        console.log('🏢 Tenant:', tenant.name)
       }
     }
 
     const retrieved_user: User = {
-      id: user.id,
-      email: user.email!,
+      id: authUser.id,
+      email: authUser.email!,
       first_name: profile?.first_name || '',
       last_name: profile?.last_name || '',
       tenant: tenant,
       role: profile?.role || 'tenant',
     }
 
-    console.log(retrieved_user)
-
+    console.log('✅ User built:', retrieved_user)
     return retrieved_user
-  }
-
-  const onAuthStateChange = (callback: (user: User | null) => void) => {
-    return supabase.auth.onAuthStateChange(async (_, session) => {
-      if (session?.user) {
-        const user = await getCurrentUser()
-        callback(user)
-      } else {
-        callback(null)
-      }
-    })
   }
 
   const login = async (credentials: LoginForm) => {
@@ -89,9 +78,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     const { error } = await supabase.auth.signOut()
     if (error) throw error
-
-    setUser(null)
-    setCurrentTenant(null)
   }
 
   const switchTenant = async (tenantId: string) => {
@@ -114,69 +100,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const loadTenantData = async (tenant: Tenant | null) => {
-    if (tenant) {
-      setCurrentTenant(tenant)
-    } else {
-      setCurrentTenant(null)
-    }
-  }
-
   useEffect(() => {
+    console.log('🟢 AuthProvider mounted')
     let subscription: Subscription | null = null
 
-    async function initializeAuth() {
-      try {
-        const {
-          data: { session },
-          error,
-        } = await supabase.auth.getSession()
-        if (error) throw error
+    const handleAuthChange = async (event: string, session: any) => {
+      console.log(
+        `🔔 Auth event: ${event}`,
+        session?.user?.email || 'no session'
+      )
 
-        if (!session) {
-          setIsLoading(false)
-          return
-        }
+      if (session?.user) {
+        console.log('🔄 Building user from session user...')
+        // Use session.user directly - it's already authenticated!
+        const currentUser = await buildUserFromSession(session.user)
 
-        const currentUser = await getCurrentUser()
-
-        if (!currentUser) {
-          setUser(null)
-          setCurrentTenant(null)
-          setIsLoading(false)
-          return
-        }
-
+        console.log('💾 Setting user state:', currentUser)
         setUser(currentUser)
-        await loadTenantData(currentUser.tenant)
-        setIsLoading(false)
-      } catch (error) {
-        console.error('Auth initialization error:', error)
+
+        if (currentUser?.tenant) {
+          setCurrentTenant(currentUser.tenant)
+        } else {
+          setCurrentTenant(null)
+        }
+      } else {
+        console.log('🚫 Clearing user state')
         setUser(null)
         setCurrentTenant(null)
-        setIsLoading(false)
-      } finally {
-        const {
-          data: { subscription: sub },
-        } = onAuthStateChange(async user => {
-          setUser(user)
-
-          if (user?.tenant) {
-            await loadTenantData(user.tenant)
-          } else {
-            setCurrentTenant(null)
-          }
-        })
-        subscription = sub
       }
+
+      console.log('✋ Setting isLoading = false')
+      setIsLoading(false)
     }
 
-    initializeAuth()
+    const {
+      data: { subscription: sub },
+    } = supabase.auth.onAuthStateChange(handleAuthChange)
+    subscription = sub
+
+    // Fallback timeout
+    const timeout = setTimeout(() => {
+      console.log('⏰ Timeout: setting isLoading = false')
+      setIsLoading(false)
+    }, 1000)
 
     return () => {
-      if (subscription) {
-        subscription.unsubscribe()
-      }
+      console.log('🧹 Cleanup')
+      clearTimeout(timeout)
+      subscription?.unsubscribe()
     }
   }, [])
 
