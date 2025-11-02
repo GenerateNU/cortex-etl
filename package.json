@@ -5,16 +5,14 @@
         "up": "npm run init-dev && docker-compose up -d",
         "down": "npx supabase stop && docker-compose down",
         "rebuild": "docker-compose down -v && npm run build && npm run up",
-        
         "reset": "npx supabase db reset && npm run types:generate && docker-compose restart backend",
         "hard-clean": "npx supabase stop --no-backup && docker-compose down -v && docker container prune -f && docker network prune -f",
         "fresh": "npm run hard-clean && npm run build && npm run up && npm run types:generate",
-        
         "types:generate": "npm run types:frontend",
         "types:frontend": "npx supabase gen types typescript --local > frontend/src/types/database.types.ts"
     },
     "devDependencies": {
-        "supabase": "2.47.2"
+        "supabase": "^2.55.5"
     },
     "dependencies": {
         "dotenv": "^17.2.3"

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Layout } from '../components/layout/Layout'
 import { useAuth } from '../contexts/AuthContext'
 import { useGetAllFiles, useFilesMutations } from '../hooks/files.hooks'
@@ -34,13 +34,19 @@ export function DocumentPage() {
   const isTenant = user?.role === 'tenant'
   const isAdmin = user?.role === 'admin'
 
+  const handleExtractedFilesChange = useCallback(() => {
+    queryClient.invalidateQueries({
+      queryKey: QUERY_KEYS.extractedFiles.all(),
+    })
+    queryClient.invalidateQueries({
+      queryKey: QUERY_KEYS.files.all(),
+    })
+  }, [queryClient])
+
   useRealtimeSubscription({
     table: 'extracted_files',
     event: '*',
-    onEvent: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.EXTRACTED_FILES })
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.FILES })
-    },
+    onEvent: handleExtractedFilesChange,
   })
 
   // Restore file from URL
@@ -171,7 +177,9 @@ export function DocumentPage() {
                     <div>
                       <p className="text-slate-100 font-medium">{file.name}</p>
                       <p className="text-sm text-slate-400">
-                        {new Date(file.created_at).toLocaleDateString()}
+                        {file.created_at
+                          ? new Date(file.created_at).toLocaleDateString()
+                          : 'No Created At'}
                       </p>
                     </div>
                   </div>

@@ -12,7 +12,7 @@ export const useGetClusterVisualization = () => {
   const { currentTenant, user } = useAuth()
 
   const query = useQuery({
-    queryKey: QUERY_KEYS.CLASSIFICATION,
+    queryKey: QUERY_KEYS.classifications.visualization(currentTenant?.id),
     queryFn: async (): Promise<VisualizationResponse> => {
       const { data } = await api.get(
         `/classification/visualize_clustering/${currentTenant?.id}`
@@ -35,7 +35,7 @@ export const useGetClassifications = () => {
   const { currentTenant, user } = useAuth()
 
   const query = useQuery({
-    queryKey: QUERY_KEYS.CLASSIFICATION,
+    queryKey: QUERY_KEYS.classifications.list(currentTenant?.id),
     queryFn: async (): Promise<Classification[]> => {
       if (!currentTenant) return []
 
@@ -81,7 +81,10 @@ export const useClassifications = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: [...QUERY_KEYS.CLASSIFICATION, currentTenant?.id],
+        queryKey: QUERY_KEYS.classifications.list(currentTenant?.id),
+      })
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.classifications.visualization(currentTenant?.id),
       })
     },
   })
@@ -96,10 +99,10 @@ export const useClassifications = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: [...QUERY_KEYS.CLASSIFICATION, currentTenant?.id],
+        queryKey: QUERY_KEYS.classifications.list(currentTenant?.id),
       })
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.FILES,
+        queryKey: QUERY_KEYS.files.list(currentTenant?.id),
       })
     },
   })

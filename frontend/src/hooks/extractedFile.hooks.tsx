@@ -8,7 +8,7 @@ export const useGetAllExtractedFiles = () => {
   const { currentTenant } = useAuth()
 
   const query = useQuery({
-    queryKey: [...QUERY_KEYS.EXTRACTED_FILES, currentTenant?.id],
+    queryKey: QUERY_KEYS.extractedFiles.list(currentTenant?.id),
     queryFn: async (): Promise<ExtractedFile[]> => {
       if (!currentTenant) return []
 
@@ -38,7 +38,7 @@ export const useGetExtractedFile = (sourceFileId: string | undefined) => {
   const { user } = useAuth()
 
   const query = useQuery({
-    queryKey: [...QUERY_KEYS.EXTRACTED_FILES, sourceFileId],
+    queryKey: QUERY_KEYS.extractedFiles.detail(sourceFileId),
     queryFn: async (): Promise<ExtractedFile | null> => {
       if (!sourceFileId) {
         return null
