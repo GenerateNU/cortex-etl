@@ -65,7 +65,6 @@ async def create_classifications(
 
     client = LLMClient()
     classification_names = []
-    name_to_files = {}
 
     for cluster_id, files_in_cluster in clusters.items():
         print(f"Analyzing cluster {cluster_id} with {len(files_in_cluster)} files...")
@@ -98,17 +97,10 @@ async def create_classifications(
         classification_names.append(category_name)
         print(f"  → Named: {category_name}")
 
-        # Merge clusters by name
-        if category_name in name_to_files:
-            name_to_files[category_name].extend(files_in_cluster)
-        else:
-            name_to_files[category_name] = files_in_cluster
-        
-
     # Handle outliers individually
     for i, file in enumerate(outliers):
         print(f"Analyzing outlier {i} (single file)...")
-        text = _extract_text_from_file(file)[:500]  # Limit length
+        text = _extract_text_from_file(file)
         prompt = f"""Analyze this document and provide a concise classification name.
 
     Document:
@@ -133,7 +125,7 @@ async def create_classifications(
             print(f"  → Outlier named: {fallback_name}")
 
     
-    all_classifications = classification_names #+ initialClassifications
+    all_classifications = classification_names + initialClassifications
     final_classifications = list(set(all_classifications))  
     
     print(f"Final classifications: {final_classifications}")
