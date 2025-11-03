@@ -65,6 +65,7 @@ async def create_classifications(
 
     client = LLMClient()
     classification_names = []
+    name_to_files = {}
 
     for cluster_id, files_in_cluster in clusters.items():
         print(f"Analyzing cluster {cluster_id} with {len(files_in_cluster)} files...")
@@ -88,25 +89,14 @@ async def create_classifications(
         try:
             response = await client.chat(prompt, temperature=0.3, max_tokens=50)
             category_name = response.choices[0].message.content.strip()
-            classification_names.append(category_name)
-            print(f"  → Named: {category_name}")
-        except Exception as e:
-            print(f"  → Error generating name: {e}")
-            
-
-
-    # Map Cluster names to files
-    name_to_files = {}
-
-    for cluster_id, files_in_cluster in clusters.items():
-        try:
-            response = await client.chat(prompt, temperature=0.3, max_tokens=50)
-            category_name = response.choices[0].message.content.strip()
             if not category_name:
                 category_name = f"Document Type {cluster_id}"
         except Exception as e:
             print(f"  → Error generating name: {e}")
             category_name = f"Document Type {cluster_id}"
+
+        classification_names.append(category_name)
+        print(f"  → Named: {category_name}")
 
         # Merge clusters by name
         if category_name in name_to_files:
@@ -114,7 +104,6 @@ async def create_classifications(
         else:
             name_to_files[category_name] = files_in_cluster
         
-    
 
     # Handle outliers individually
     for i, file in enumerate(outliers):
@@ -174,4 +163,3 @@ def _extract_text_from_file(file: ExtractedFile) -> str:
         
     
     return " ".join(parts)
-
