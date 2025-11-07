@@ -8,8 +8,7 @@ from sklearn.preprocessing import normalize
 
 
 async def create_classifications(
-    classification_service: ClassificationService,
-    tenant_id: UUID,
+    extracted_files: list[ExtractedFile],
     initialClassifications: list[str],
 ) -> list[str]:
     """
@@ -17,12 +16,6 @@ async def create_classifications(
     to iteratively set new classifications returning the final result
     """
     # TODO: Implement the logic that creates/edits classifications from the extracted files.
-
-    # Fetch extracted files for this tenant
-    extracted_files = await classification_service.get_extracted_files(tenant_id)
-
-    if not extracted_files or len(extracted_files) == 0:
-        return initialClassifications
 
     embeddings = []
     valid_files = []
