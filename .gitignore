@@ -32,4 +32,4 @@ docker-compose.override.yml
 
 # Supabase
 .env.supabase.local
-kong.ymlbackend/app/services/.DS_Store
+kong.yml
