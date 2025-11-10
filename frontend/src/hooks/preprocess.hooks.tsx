@@ -21,8 +21,12 @@ export const useRetryExtract = () => {
       return data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.FILES })
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.EXTRACTED_FILES })
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.files.all(),
+      })
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.extractedFiles.all(),
+      })
     },
   })
 

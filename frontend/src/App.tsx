@@ -4,6 +4,10 @@ import { LoginPage } from './pages/LoginPage'
 import { DocumentPage } from './pages/DocumentPage'
 import { AdminPage } from './pages/AdminPage'
 import { ClusterVisualizationPage } from './pages/ClusterVisualizationPage'
+import { Layout } from './components/layout/Layout'
+import { ErrorTester } from './components/debug/ErrorTester'
+
+const isDevelopment = import.meta.env.VITE_ENVIRONMENT === 'development'
 
 function App() {
   return (
@@ -33,6 +37,18 @@ function App() {
           </ProtectedRoute>
         }
       />
+      {isDevelopment && (
+        <Route
+          path="/error-test"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ErrorTester />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+      )}
       <Route path="/*" element={<Navigate to="/" />} />
     </Routes>
   )

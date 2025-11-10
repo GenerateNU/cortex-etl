@@ -8,7 +8,7 @@ export const useGetAllTenants = () => {
   const { user } = useAuth()
 
   const query = useQuery({
-    queryKey: QUERY_KEYS.TENANTS,
+    queryKey: QUERY_KEYS.tenants.list(),
     queryFn: async (): Promise<Tenant[]> => {
       const { data, error } = await supabase
         .from('tenants')
@@ -34,7 +34,7 @@ export const useGetTenant = (tenantId: string | undefined) => {
   const { user } = useAuth()
 
   const query = useQuery({
-    queryKey: QUERY_KEYS.TENANTS,
+    queryKey: QUERY_KEYS.tenants.detail(tenantId),
     queryFn: async (): Promise<Tenant | null> => {
       if (!tenantId) {
         throw new Error('Tenant ID is required')
