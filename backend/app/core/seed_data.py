@@ -1,4 +1,4 @@
-from supabase import AsyncClient
+from supabase._async.client import AsyncClient
 
 
 def print_credentials():

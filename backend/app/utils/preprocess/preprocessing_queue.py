@@ -1,7 +1,7 @@
 import asyncio
 from uuid import UUID
 
-from supabase import AsyncClient
+from supabase._async.client import AsyncClient
 
 from app.services.preprocess_service import PreprocessService
 

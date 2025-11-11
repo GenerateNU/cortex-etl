@@ -1,6 +1,6 @@
 import os
 
-from supabase import AsyncClient
+from supabase._async.client import AsyncClient
 
 
 async def configure_webhooks(supabase: AsyncClient):

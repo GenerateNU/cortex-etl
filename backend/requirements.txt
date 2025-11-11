@@ -3,7 +3,8 @@ fastapi==0.119.0
 uvicorn[standard]==0.37.0
 
 # Supabase Client
-supabase==2.22.0
+supabase>=2.7.0
+gotrue>=2.5.0
 
 # Configuration
 python-dotenv==1.0.1

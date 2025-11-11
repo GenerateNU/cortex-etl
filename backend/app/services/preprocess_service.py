@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from fastapi import Depends
-from supabase import AsyncClient
+from supabase._async.client import AsyncClient
 
 from app.core.supabase import get_async_supabase
 from app.utils.preprocess.embeddings import generate_embedding
