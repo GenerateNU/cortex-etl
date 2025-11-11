@@ -44,7 +44,7 @@ async def create_classifications(
 
     cluster_labels = clusterer.fit_predict(normalized_embeddings)
     # HDBSCAN marks outliers with -1
-    outlier_indices = np.where(cluster_labels == -1)[0]
+    _outlier_indices = np.where(cluster_labels == -1)[0]
 
     clusters = {}
 
@@ -75,7 +75,7 @@ async def create_classifications(
 
     {chr(10).join(f"Document {i + 1}: {text}" for i, text in enumerate(sample_texts))}
 
-    What type of documents are these? Respond with ONLY the category name. 
+    What type of documents are these? Respond with ONLY the category name.
     Do not include any explanation or punctuation."""
 
         try:
@@ -135,7 +135,7 @@ def _extract_text_from_file(file: ExtractedFile) -> str:
     # Add extracted content
     if isinstance(file.extracted_data, dict):
         for key, value in file.extracted_data.items():
-            if isinstance(value, (dict, list)):
+            if isinstance(value, dict | list):
                 continue
             parts.append(f"{key}: {value}")
     elif isinstance(file.extracted_data, list):

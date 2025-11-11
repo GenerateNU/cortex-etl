@@ -1,6 +1,7 @@
 import numpy as np
-from app.schemas.classification_schemas import Classification, ExtractedFile
+
 from app.core.litellm import LLMClient
+from app.schemas.classification_schemas import Classification, ExtractedFile
 
 
 async def classify_files(
@@ -13,7 +14,7 @@ async def classify_files(
 
     Each file is assigned the classification with the highest cosine similarity.
     """
-    
+
     if not extracted_files or not classifications:
         return extracted_files
 
@@ -50,12 +51,14 @@ async def classify_files(
                 best_similarity = sim
                 best_classification = next(
                     (c for c in classifications if c.classification_id == class_id),
-                    None
+                    None,
                 )
 
         if best_classification:
             file.classification = best_classification
-            print(f"  {file.name} → {best_classification.name} (similarity: {best_similarity:.3f})")
+            print(
+                f"  {file.name} → {best_classification.name} (similarity: {best_similarity:.3f})"
+            )
 
     return extracted_files
 
