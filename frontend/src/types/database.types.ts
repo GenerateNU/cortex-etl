@@ -283,7 +283,7 @@ export type Database = {
       }
       l2_normalize: {
         Args: { '': string } | { '': unknown } | { '': unknown }
-        Returns: unknown
+        Returns: string
       }
       match_documents: {
         Args: {
@@ -299,45 +299,9 @@ export type Database = {
           source_file_id: string
         }[]
       }
-      sparsevec_out: {
-        Args: { '': unknown }
-        Returns: unknown
-      }
-      sparsevec_send: {
-        Args: { '': unknown }
-        Returns: string
-      }
-      sparsevec_typmod_in: {
-        Args: { '': unknown[] }
-        Returns: number
-      }
       update_webhook_config: {
         Args: { secret: string; url: string }
         Returns: undefined
-      }
-      vector_avg: {
-        Args: { '': number[] }
-        Returns: string
-      }
-      vector_dims: {
-        Args: { '': string } | { '': unknown }
-        Returns: number
-      }
-      vector_norm: {
-        Args: { '': string }
-        Returns: number
-      }
-      vector_out: {
-        Args: { '': string }
-        Returns: unknown
-      }
-      vector_send: {
-        Args: { '': string }
-        Returns: string
-      }
-      vector_typmod_in: {
-        Args: { '': unknown[] }
-        Returns: number
       }
     }
     Enums: {

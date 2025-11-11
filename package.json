@@ -12,7 +12,7 @@
         "types:frontend": "npx supabase gen types typescript --local > frontend/src/types/database.types.ts"
     },
     "devDependencies": {
-        "supabase": "^2.55.5"
+        "supabase": "^2.58.5"
     },
     "dependencies": {
         "dotenv": "^17.2.3"
