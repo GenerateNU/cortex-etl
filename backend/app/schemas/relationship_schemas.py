@@ -1,8 +1,9 @@
 from enum import Enum
 from uuid import UUID
 
-from backend.app.schemas.classification_schemas import Classification
 from pydantic import BaseModel
+
+from app.schemas.classification_schemas import Classification
 
 
 class RelationshipType(str, Enum):
@@ -12,11 +13,16 @@ class RelationshipType(str, Enum):
     MANY_TO_MANY = "many-to-many"
 
 
-class Relationship(BaseModel):
-    """Relationships given through the Pattern Rec"""
+class RelationshipCreate(BaseModel):
+    """Relationships outputted through the Pattern Rec"""
 
-    relationship_id: UUID
     tenant_id: UUID
     from_classification: Classification | None = None
     to_classification: Classification | None = None
     type: RelationshipType
+
+
+class Relationship(RelationshipCreate):
+    """Relationship taken in through the migration team"""
+
+    relationship_id: UUID

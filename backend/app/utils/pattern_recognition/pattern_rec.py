@@ -1,19 +1,21 @@
-import asyncio
 import json
-
-from backend.app.schemas.classification_schemas import Classification, ExtractedFile
+from collections import defaultdict
 
 from app.core.litellm import LLMClient
+from app.schemas.classification_schemas import Classification, ExtractedFile
+from app.schemas.relationship_schemas import (
+    RelationshipCreate,
+    RelationshipType,
+)
 
 """
 To test run it -> cd into backend, then run, python3 -m app.utils.pattern_recognition.pattern_rec
 """
 
-
 async def analyze_category_relationships(
     classifications: list[Classification],
     extracted_files: list[ExtractedFile],
-):
+) -> list[RelationshipCreate]:
     """
     Analyze relationships between categories and generate a markdown report.
 
@@ -21,99 +23,184 @@ async def analyze_category_relationships(
         categories: List of category names
         extracted_files: List of ExtractedFile objects containing document context
         output_file: Output markdown file path
+
+    Returns:
+        list[Relationship]: List of Relationship objects
     """
 
-    file_contexts = []
+    tenant_id = classifications[0].tenant_id
+
+    # Group files by classification
+    files_by_classification = defaultdict(list)
     for file in extracted_files:
-        context = {
-            "filename": file.name,
-            "type": file.type,
-            "extracted_data": file.extracted_data,
-            "classification": file.classification.name
-            if file.classification
-            else "Unclassified",
-        }
-        file_contexts.append(context)
+        files_by_classification[file.classification.name].append(file)
 
-    # Initialize LLM client
-    client = LLMClient()
-
-    categories = [classification.name for classification in classifications]
+    sampled_contexts = {}
+    for classification_name, files in files_by_classification.items():
+        sampled_contexts[classification_name] = [
+            {
+                "filename": f.name,
+                "data": f.extracted_data,
+            }
+            for f in files[:10]
+        ]
 
     # Build prompt
+    categories = [c.name for c in classifications]
     categories_str = ", ".join(categories)
 
-    # Format file context for the prompt
-    file_context_str = "\n".join(
-        [
-            f"- File: {ctx['filename']} (Type: {ctx['type']}, Classification: {ctx['classification']})\n"
-            f"  Data: {json.dumps(ctx['extracted_data'], indent=2)}"
-            for ctx in file_contexts
-        ]
-    )
-    prompt = f"""You are a database schema expert. Given these entity names, 
-    determine ALL possible relationships/cardinality and permutations between them. We need the
-    relationships between ALL categories in order to create our SQL Database.
+    # Converts to the dic to a string for the LLM prompt
+    context_str = ""
+    for name, files_info in sampled_contexts.items():
+        context_str += f"\n{name}:\n"
+        for file_info in files_info:
+            context_str += f"  {file_info['filename']}:\n"
+            context_str += f"    {json.dumps(file_info['data'], indent=4)}\n"
 
-LIST OF CATEGORIES: {categories_str}
-DOCUMENT CONTEXT FROM EXTRACTED FILES: {file_context_str}
+    prompt = f"""Analyze relationships between these entities.
 
-Based on the entity types AND the actual data in the extracted files, determine:
-1. What relationships exist between entity types
-2. The specific field names that should be used as join keys
-3. The relationship type (one-to-one, one-to-many, many-to-one, or many-to-many)
+    ENTITIES: {categories_str}
 
-Analyze the column names and data patterns carefully to identify which fields should be used for joins.
-Look for ID fields, foreign key references, and matching column names across different entity types.
+    DATA:
+    {context_str}
 
-Return ONLY valid JSON with this structure:
-{{
-  "relationships": [
-    {{
-      "from_type": "Purchase Order",
-      "to_type": "Robot Specification",
-      "relationship_type": "many-to-many",
-      "join_keys": {{
-          "from_field": "po_number",
-          "to_field": "specification_id"
-      }}
-    }},
-    {{
-      "from_type": "Quotation",
-      "to_type": "Purchase Order",
-      "relationship_type": "one-to-many",
-      "join_keys": {{
-          "from_field": "quote_id",
-          "to_field": "po_id"
-      }}
-    }}
-  ]
-}}
+    Find relationships by looking for foreign key patterns.
 
-Rules:
-- from_type and to_type must exactly match the entity type names from the list
-- relationship_type must be EXACTLY one of: "one-to-one", "one-to-many", "many-to-one", or "many-to-many"
-- join_keys must specify the actual field/column names from the extracted data
-- from_field is the field in the from_type entity
-- to_field is the field in the to_type entity that should match/reference from_field
-- Only include relationships where you can identify actual matching fields in the data
-- If a many-to-many relationship exists, identify the fields that would be used in a junction table
-- Base all decisions on the actual column names visible in the extracted_data
-- Return ONLY valid JSON, no markdown formatting, no explanations"""
+    Return JSON:
+    [
+    {{"from_type": "Students", "to_type": "Classes", "relationship_type": "many-to-one"}}
+    ]
 
+    Rules:
+    - from_type/to_type from: {categories_str}
+    - relationship_type: "one-to-one", "one-to-many", "many-to-one", or "many-to-many" ONLY
+    """
     # Call LLM
-    print("Analyzing relationships and join keys...")
+    client = LLMClient()
     response = await client.chat(prompt, json_response=True)
 
     # Parse response
     response_text = response.choices[0].message.content.strip()
-    analysis = json.loads(response_text)
+    data = json.loads(response_text)
 
-    print("✓ Analysis complete")
-    return analysis
+    # Map names to classifications
+    classification_map = {c.name: c for c in classifications}
+
+    # Build relationships
+    relationships = []
+    for item in data:
+        from_class = classification_map[item["from_type"]]
+        to_class = classification_map[item["to_type"]]
+
+        relationships.append(
+            RelationshipCreate(
+                tenant_id=tenant_id,
+                from_classification=from_class,
+                to_classification=to_class,
+                type=RelationshipType(item["relationship_type"]),
+            )
+        )
+
+    return relationships
 
 
-# Example usage
 if __name__ == "__main__":
-    categories = ["Students", "Classes", "Homework"]
-    asyncio.run(analyze_category_relationships(categories))
+    import asyncio
+    from uuid import uuid4
+
+    async def main():
+        # Setup test data
+        tenant_id = uuid4()
+
+        # Create classifications
+        student_classification = Classification(
+            classification_id=uuid4(), tenant_id=tenant_id, name="Students"
+        )
+
+        class_classification = Classification(
+            classification_id=uuid4(), tenant_id=tenant_id, name="Classes"
+        )
+
+        homework_classification = Classification(
+            classification_id=uuid4(), tenant_id=tenant_id, name="Homework"
+        )
+
+        classifications = [
+            student_classification,
+            class_classification,
+            homework_classification,
+        ]
+
+        # Create extracted files
+        extracted_files = [
+            ExtractedFile(
+                file_upload_id=uuid4(),
+                type="csv",
+                name="students.csv",
+                tenant_id=tenant_id,
+                extracted_file_id=uuid4(),
+                extracted_data={
+                    "headers": ["student_id", "name", "email", "class_id"],
+                    "sample_rows": [
+                        {"student_id": 1, "name": "John", "class_id": 101},
+                        {"student_id": 2, "name": "Jane", "class_id": 101},
+                    ],
+                },
+                embedding=[0.1],
+                classification=student_classification,
+            ),
+            ExtractedFile(
+                file_upload_id=uuid4(),
+                type="csv",
+                name="classes.csv",
+                tenant_id=tenant_id,
+                extracted_file_id=uuid4(),
+                extracted_data={
+                    "headers": ["class_id", "class_name", "teacher"],
+                    "sample_rows": [
+                        {
+                            "class_id": 101,
+                            "class_name": "Math 101",
+                            "teacher": "Prof. Smith",
+                        }
+                    ],
+                },
+                embedding=[0.2],
+                classification=class_classification,
+            ),
+            ExtractedFile(
+                file_upload_id=uuid4(),
+                type="csv",
+                name="homework.csv",
+                tenant_id=tenant_id,
+                extracted_file_id=uuid4(),
+                extracted_data={
+                    "headers": ["homework_id", "title", "class_id", "student_id"],
+                    "sample_rows": [
+                        {
+                            "homework_id": 1,
+                            "title": "Assignment 1",
+                            "class_id": 101,
+                            "student_id": 1,
+                        }
+                    ],
+                },
+                embedding=[0.3],
+                classification=homework_classification,
+            ),
+        ]
+
+        # Test the function
+        print("Testing relationship analysis...")
+        relationships = await analyze_category_relationships(
+            classifications, extracted_files
+        )
+
+        print(f"\nFound {len(relationships)} relationships:")
+        for rel in relationships:
+            print(
+                f"  {rel.from_classification.name} → {rel.to_classification.name} ({rel.type.value})"
+            )
+
+    # Run the async function
+    asyncio.run(main())
