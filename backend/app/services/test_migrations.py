@@ -1,56 +1,42 @@
-# app/dev/test_migrations.py
+# app/services/test_async_apply_migrations.py
+import asyncio
 from uuid import uuid4
 
 from app.schemas.classification_schemas import Classification
-from app.schemas.migration_schemas import Relationship, RelationshipType
-from app.services.migration_service import create_migrations
+from app.schemas.migration_schemas import Relationship, RelationshipType, Migration
+from app.services.migration_service import create_migrations, apply_migrations
 
 
-def main() -> None:
-    # Fake tenant
+async def main():
     tenant_id = uuid4()
 
-    # Fake classifications (these simulate 2 “tables”)
-    robot_spec = Classification(
+    c_robot = Classification(
         classification_id=uuid4(),
         tenant_id=tenant_id,
         name="RobotSpecifications",
     )
-
-    purchase_order = Classification(
+    c_po = Classification(
         classification_id=uuid4(),
         tenant_id=tenant_id,
         name="PurchaseOrders",
     )
 
-    # Fake relationship: many robot_specs ↔ many purchase_orders
     rel = Relationship(
         relationship_id=uuid4(),
         tenant_id=tenant_id,
-        from_classification=robot_spec,
-        to_classification=purchase_order,
+        from_classification=c_robot,
+        to_classification=c_po,
         type=RelationshipType.MANY_TO_MANY,
     )
 
-    # No existing migrations yet
-    initial_migrations = []
-
-    # 🔥 Call your function
     new_migrations = create_migrations(
-        classifications=[robot_spec, purchase_order],
+        classifications=[c_robot, c_po],
         relationships=[rel],
-        initial_migrations=initial_migrations,
+        initial_migrations=[],  # first run: nothing yet
     )
 
-    # Print what it produced
-    print(f"Generated {len(new_migrations)} migrations:\n")
-    for m in new_migrations:
-        print("-----")
-        print("name:", m.name)
-        print("sql:")
-        print(m.sql)
-        print()
+    await apply_migrations(new_migrations)
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

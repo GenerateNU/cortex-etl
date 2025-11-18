@@ -5,6 +5,60 @@ from datetime import datetime
 
 from app.schemas.classification_schemas import Classification
 from app.schemas.migration_schemas import Relationship, Migration, RelationshipType
+from datetime import datetime
+
+from supabase._async.client import AsyncClient
+from app.schemas.migration_schemas import Migration
+from app.core.supabase import get_async_supabase  # ⬅️ use existing helper
+
+
+async def apply_migrations(migrations: list[Migration]) -> None:
+    """
+    1) Skip migrations that already exist in dynamic_migrations (by name)
+    2) For new ones:
+        - call RPC `execute_sql(query := migration.sql)` to run the DDL
+        - insert a row into dynamic_migrations to record that it was applied
+    """
+    # get the same Supabase client your API uses
+    supabase: AsyncClient = await get_async_supabase()
+
+    for m in migrations:
+        # 1) Check if a migration with this name already exists
+        resp = await (
+            supabase.table("dynamic_migrations")
+            .select("migration_id")
+            .eq("name", m.name)
+            .limit(1)
+            .execute()
+        )
+
+        if resp.data:  # already applied
+            continue
+
+        # 2) Run the SQL via a Supabase RPC (Postgres function) you define as `execute_sql`
+        #    In SQL this function would look roughly like:
+        #    CREATE OR REPLACE FUNCTION execute_sql(query text) RETURNS void AS $$
+        #    BEGIN
+        #        EXECUTE query;
+        #    END;
+        #    $$ LANGUAGE plpgsql SECURITY DEFINER;
+        await supabase.rpc("execute_sql", {"query": m.sql}).execute()
+
+        # 3) Record it in dynamic_migrations (so we don’t re-apply later)
+        await (
+            supabase.table("dynamic_migrations")
+            .insert(
+                {
+                    "migration_id": str(m.migration_id),
+                    "tenant_id": str(m.tenant_id),
+                    "name": m.name,
+                    "sql": m.sql,
+                    "created_at": m.created_at.isoformat(),
+                    "applied_at": datetime.utcnow().isoformat(),
+                }
+            )
+            .execute()
+        )
 
 def table_name_for_classification(c: Classification) -> str:
     # you can tweak this later (snake_case, prefix with tenant, etc.)
@@ -122,3 +176,4 @@ def create_migrations(
         existing_names.add(mig_name)
 
     return new_migrations
+   
