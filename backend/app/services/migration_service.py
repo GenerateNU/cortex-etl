@@ -9,7 +9,7 @@ from datetime import datetime
 
 from supabase._async.client import AsyncClient
 from app.schemas.migration_schemas import Migration
-from app.core.supabase import get_async_supabase  # ⬅️ use existing helper
+from app.core.supabase import get_async_supabase 
 
 
 async def apply_migrations(migrations: list[Migration]) -> None:
@@ -19,7 +19,6 @@ async def apply_migrations(migrations: list[Migration]) -> None:
         - call RPC `execute_sql(query := migration.sql)` to run the DDL
         - insert a row into dynamic_migrations to record that it was applied
     """
-    # get the same Supabase client your API uses
     supabase: AsyncClient = await get_async_supabase()
 
     for m in migrations:
@@ -32,16 +31,10 @@ async def apply_migrations(migrations: list[Migration]) -> None:
             .execute()
         )
 
-        if resp.data:  # already applied
+        if resp.data:
             continue
 
-        # 2) Run the SQL via a Supabase RPC (Postgres function) you define as `execute_sql`
-        #    In SQL this function would look roughly like:
-        #    CREATE OR REPLACE FUNCTION execute_sql(query text) RETURNS void AS $$
-        #    BEGIN
-        #        EXECUTE query;
-        #    END;
-        #    $$ LANGUAGE plpgsql SECURITY DEFINER;
+        # 2) Run the SQL via `execute_sql`
         await supabase.rpc("execute_sql", {"query": m.sql}).execute()
 
         # 3) Record it in dynamic_migrations (so we don’t re-apply later)
@@ -61,7 +54,7 @@ async def apply_migrations(migrations: list[Migration]) -> None:
         )
 
 def table_name_for_classification(c: Classification) -> str:
-    # you can tweak this later (snake_case, prefix with tenant, etc.)
+
     return c.name.lower()
 
 def create_migrations(
@@ -87,9 +80,8 @@ def create_migrations(
         mig_name = f"create_table_{table_name}"
 
         if mig_name in existing_names:
-            continue  # we already have this migration
+            continue 
 
-        # SUPER simple example – you'll refine this:
         sql = f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
             id UUID PRIMARY KEY,
@@ -121,7 +113,6 @@ def create_migrations(
         if mig_name in existing_names:
             continue
 
-        # VERY rough first pass: you will adjust logic + SQL later
         if rel.type == RelationshipType.ONE_TO_MANY:
             # Example: many 'from_table' rows refer to one 'to_table' row
             sql = f"""
