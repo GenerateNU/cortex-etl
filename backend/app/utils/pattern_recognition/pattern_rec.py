@@ -12,6 +12,7 @@ from app.schemas.relationship_schemas import (
 To test run it -> cd into backend, then run, python3 -m app.utils.pattern_recognition.pattern_rec
 """
 
+
 async def analyze_category_relationships(
     classifications: list[Classification],
     extracted_files: list[ExtractedFile],
@@ -73,7 +74,7 @@ async def analyze_category_relationships(
 
     Rules:
     - from_type/to_type from: {categories_str}
-    - relationship_type: "one-to-one", "one-to-many", "many-to-one", or "many-to-many" ONLY
+    - relationship_type: "one-to-one", "one-to-many", or "many-to-many" ONLY
     """
     # Call LLM
     client = LLMClient()
@@ -95,8 +96,8 @@ async def analyze_category_relationships(
         relationships.append(
             RelationshipCreate(
                 tenant_id=tenant_id,
-                from_classification=from_class,
-                to_classification=to_class,
+                from_classification_id=from_class.classification_id,
+                to_classification_id=to_class.classification_id,
                 type=RelationshipType(item["relationship_type"]),
             )
         )
@@ -199,7 +200,7 @@ if __name__ == "__main__":
         print(f"\nFound {len(relationships)} relationships:")
         for rel in relationships:
             print(
-                f"  {rel.from_classification.name} → {rel.to_classification.name} ({rel.type.value})"
+                f"  {rel.from_classification_id} → {rel.to_classification_id} ({rel.type.value})"
             )
 
     # Run the async function
