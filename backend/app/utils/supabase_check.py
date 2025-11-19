@@ -1,6 +1,6 @@
 import asyncio
 
-from supabase import AsyncClient
+from supabase._async.client import AsyncClient
 
 
 async def wait_for_supabase(supabase: AsyncClient):

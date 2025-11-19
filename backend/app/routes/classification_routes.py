@@ -91,7 +91,7 @@ async def create_classifications(
             )
 
         classification_names: list[str] = await create_classifications_helper(
-            tenant_id,
+            extracted_files,
             [classification.name for classification in initial_classifications],
         )
 

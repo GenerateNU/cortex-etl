@@ -9,7 +9,7 @@ export const useGetAllFiles = () => {
   const { currentTenant } = useAuth()
 
   const query = useQuery({
-    queryKey: [...QUERY_KEYS.FILES, currentTenant?.id],
+    queryKey: QUERY_KEYS.files.list(currentTenant?.id),
     queryFn: async (): Promise<FileUpload[]> => {
       if (!currentTenant) return []
       const { data, error } = await supabase
@@ -45,14 +45,17 @@ export const useGetAllFiles = () => {
   }
 }
 
-export const useGetFile = (fileUploadId: string) => {
+export const useGetFile = (fileUploadId: string | undefined) => {
   const { currentTenant } = useAuth()
 
   const query = useQuery({
-    queryKey: [...QUERY_KEYS.FILES, currentTenant?.id],
+    queryKey: QUERY_KEYS.files.detail(currentTenant?.id, fileUploadId),
     queryFn: async (): Promise<FileUpload> => {
       if (!currentTenant) {
         throw new Error('No tenant selected')
+      }
+      if (!fileUploadId) {
+        throw new Error('File Upload id is required')
       }
       const { data, error } = await supabase
         .from('file_uploads')
@@ -73,14 +76,14 @@ export const useGetFile = (fileUploadId: string) => {
         classification: data.classification ? data.classification.name : null,
       }
     },
-    enabled: !!currentTenant?.id,
+    enabled: !!currentTenant?.id && !!fileUploadId,
   })
 
   return {
-    files: query.data,
-    filesIsLoading: query.isLoading,
-    filesError: query.error,
-    filesRefetch: query.refetch,
+    file: query.data,
+    fileIsLoading: query.isLoading,
+    fileError: query.error,
+    fileRefetch: query.refetch,
   }
 }
 
@@ -114,7 +117,7 @@ export const useFilesMutations = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: [...QUERY_KEYS.FILES, currentTenant?.id],
+        queryKey: QUERY_KEYS.files.list(currentTenant?.id),
       })
     },
   })
@@ -151,7 +154,10 @@ export const useFilesMutations = () => {
 
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: [...QUERY_KEYS.FILES, currentTenant?.id],
+        queryKey: QUERY_KEYS.files.list(currentTenant?.id),
+      })
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.extractedFiles.list(currentTenant?.id),
       })
     },
   })
@@ -170,7 +176,7 @@ export const useGetSignedUrl = (file: FileUpload | null) => {
   const { currentTenant } = useAuth()
 
   const query = useQuery({
-    queryKey: [...QUERY_KEYS.FILES, 'signed-url', currentTenant?.id, file?.id],
+    queryKey: QUERY_KEYS.files.signedUrl(currentTenant?.id, file?.id),
     queryFn: async (): Promise<string> => {
       if (!currentTenant || !file) {
         throw new Error('Missing tenant or file')

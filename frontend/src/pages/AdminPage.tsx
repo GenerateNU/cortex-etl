@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Layout } from '../components/layout/Layout'
 import { Button } from '../components/ui/Button'
@@ -29,21 +29,28 @@ export function AdminPage() {
     Set<string>
   >(new Set())
 
-  // Real-time updates
+  const handleClassificationChange = useCallback(() => {
+    queryClient.invalidateQueries({
+      queryKey: QUERY_KEYS.classifications.all(),
+    })
+  }, [queryClient])
+
+  const handleFileChange = useCallback(() => {
+    queryClient.invalidateQueries({
+      queryKey: QUERY_KEYS.files.all(),
+    })
+  }, [queryClient])
+
   useRealtimeSubscription({
     table: 'classifications',
     event: '*',
-    onEvent: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.CLASSIFICATION })
-    },
+    onEvent: handleClassificationChange,
   })
 
   useRealtimeSubscription({
     table: 'file_uploads',
     event: '*',
-    onEvent: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.FILES })
-    },
+    onEvent: handleFileChange,
   })
 
   // Group files by classification

@@ -146,6 +146,41 @@ export type Database = {
           },
         ]
       }
+      migrations: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          sequence: number
+          sql: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          sequence: number
+          sql: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          sequence?: number
+          sql?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'migrations_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -177,6 +212,55 @@ export type Database = {
             columns: ['tenant_id']
             isOneToOne: false
             referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      relationships: {
+        Row: {
+          created_at: string | null
+          from_classification_id: string
+          id: string
+          tenant_id: string
+          to_classification_id: string
+          type: Database['public']['Enums']['relationship_type']
+        }
+        Insert: {
+          created_at?: string | null
+          from_classification_id: string
+          id?: string
+          tenant_id: string
+          to_classification_id: string
+          type: Database['public']['Enums']['relationship_type']
+        }
+        Update: {
+          created_at?: string | null
+          from_classification_id?: string
+          id?: string
+          tenant_id?: string
+          to_classification_id?: string
+          type?: Database['public']['Enums']['relationship_type']
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'relationships_from_classification_id_fkey'
+            columns: ['from_classification_id']
+            isOneToOne: false
+            referencedRelation: 'classifications'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'relationships_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'relationships_to_classification_id_fkey'
+            columns: ['to_classification_id']
+            isOneToOne: false
+            referencedRelation: 'classifications'
             referencedColumns: ['id']
           },
         ]
@@ -225,66 +309,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      binary_quantize: {
-        Args: { '': string } | { '': unknown }
-        Returns: unknown
-      }
-      exec_sql: {
-        Args: { sql: string }
-        Returns: undefined
-      }
-      halfvec_avg: {
-        Args: { '': number[] }
-        Returns: unknown
-      }
-      halfvec_out: {
-        Args: { '': unknown }
-        Returns: unknown
-      }
-      halfvec_send: {
-        Args: { '': unknown }
-        Returns: string
-      }
-      halfvec_typmod_in: {
-        Args: { '': unknown[] }
-        Returns: number
-      }
-      hnsw_bit_support: {
-        Args: { '': unknown }
-        Returns: unknown
-      }
-      hnsw_halfvec_support: {
-        Args: { '': unknown }
-        Returns: unknown
-      }
-      hnsw_sparsevec_support: {
-        Args: { '': unknown }
-        Returns: unknown
-      }
-      hnswhandler: {
-        Args: { '': unknown }
-        Returns: unknown
-      }
-      ivfflat_bit_support: {
-        Args: { '': unknown }
-        Returns: unknown
-      }
-      ivfflat_halfvec_support: {
-        Args: { '': unknown }
-        Returns: unknown
-      }
-      ivfflathandler: {
-        Args: { '': unknown }
-        Returns: unknown
-      }
-      l2_norm: {
-        Args: { '': unknown } | { '': unknown }
-        Returns: number
-      }
-      l2_normalize: {
-        Args: { '': string } | { '': unknown } | { '': unknown }
-        Returns: unknown
-      }
+      exec_sql: { Args: { sql: string }; Returns: undefined }
+      execute_sql: { Args: { query: string }; Returns: undefined }
       match_documents: {
         Args: {
           filter_tenant_id?: string
@@ -299,50 +325,15 @@ export type Database = {
           source_file_id: string
         }[]
       }
-      sparsevec_out: {
-        Args: { '': unknown }
-        Returns: unknown
-      }
-      sparsevec_send: {
-        Args: { '': unknown }
-        Returns: string
-      }
-      sparsevec_typmod_in: {
-        Args: { '': unknown[] }
-        Returns: number
-      }
       update_webhook_config: {
         Args: { secret: string; url: string }
         Returns: undefined
-      }
-      vector_avg: {
-        Args: { '': number[] }
-        Returns: string
-      }
-      vector_dims: {
-        Args: { '': string } | { '': unknown }
-        Returns: number
-      }
-      vector_norm: {
-        Args: { '': string }
-        Returns: number
-      }
-      vector_out: {
-        Args: { '': string }
-        Returns: unknown
-      }
-      vector_send: {
-        Args: { '': string }
-        Returns: string
-      }
-      vector_typmod_in: {
-        Args: { '': unknown[] }
-        Returns: number
       }
     }
     Enums: {
       extraction_status: 'queued' | 'processing' | 'completed' | 'failed'
       file_type: 'pdf' | 'csv'
+      relationship_type: 'one-to-one' | 'one-to-many' | 'many-to-many'
       user_role: 'tenant' | 'admin'
     }
     CompositeTypes: {
@@ -476,6 +467,7 @@ export const Constants = {
     Enums: {
       extraction_status: ['queued', 'processing', 'completed', 'failed'],
       file_type: ['pdf', 'csv'],
+      relationship_type: ['one-to-one', 'one-to-many', 'many-to-many'],
       user_role: ['tenant', 'admin'],
     },
   },

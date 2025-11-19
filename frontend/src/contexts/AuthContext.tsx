@@ -178,6 +178,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         subscription.unsubscribe()
       }
     }
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [])
 
   const value: AuthContextType = {
