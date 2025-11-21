@@ -6,6 +6,11 @@ on:
       - main
     paths:
       - "supabase/migrations/**"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "supabase/migrations/**"
   workflow_dispatch:
 
 jobs:
