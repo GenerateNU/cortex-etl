@@ -1,6 +1,6 @@
 -- Create tenants table
 CREATE TABLE IF NOT EXISTS tenants (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL UNIQUE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     is_active BOOLEAN DEFAULT TRUE
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 CREATE TYPE file_type AS ENUM ('pdf', 'csv');
 
 CREATE TABLE IF NOT EXISTS file_uploads (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     type file_type NOT NULL,
     name TEXT NOT NULL,
     bucket_id TEXT NOT NULL,
@@ -35,7 +35,7 @@ CREATE TYPE extraction_status AS ENUM ('queued', 'processing', 'completed', 'fai
 
 -- Create extracted_files table
 CREATE TABLE IF NOT EXISTS extracted_files (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     source_file_id UUID NOT NULL REFERENCES file_uploads(id) ON DELETE CASCADE,
     status extraction_status NOT NULL,
     extracted_data JSONB,
