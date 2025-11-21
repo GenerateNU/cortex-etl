@@ -102,13 +102,21 @@ export function ExtractedDataPanel({ sourceFileId }: ExtractedDataPanelProps) {
       <div className="p-3 border-b border-slate-700 flex items-center justify-between flex-shrink-0">
         <StatusBadge status={extractedFile.status} />
         <span className="text-xs text-slate-400">
-          {new Date(extractedFile.updated_at).toLocaleString()}
+          {extractedFile.updated_at
+            ? new Date(extractedFile.updated_at).toLocaleString()
+            : 'No updated date available'}
         </span>
       </div>
 
       {/* JSON Viewer - Full height */}
       <div className="flex-1 p-4 min-h-0">
-        <JsonViewer data={extractedFile.extracted_data} />
+        <JsonViewer
+          data={
+            extractedFile.extracted_data ?? {
+              error: 'Extracted data is not available',
+            }
+          }
+        />
       </div>
     </div>
   )
