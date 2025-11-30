@@ -1,4 +1,4 @@
-import type { Tenant } from './auth.types'
+import type { Tenant } from './tenant.types'
 
 export interface ETLOperation {
   id: string

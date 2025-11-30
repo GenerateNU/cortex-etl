@@ -3,7 +3,7 @@ CREATE TYPE relationship_type AS ENUM ('one-to-one', 'one-to-many', 'many-to-man
 
 -- Create relationships table
 CREATE TABLE IF NOT EXISTS relationships (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     from_classification_id UUID NOT NULL REFERENCES classifications(id) ON DELETE CASCADE,
     to_classification_id UUID NOT NULL REFERENCES classifications(id) ON DELETE CASCADE,

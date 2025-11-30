@@ -1,5 +1,7 @@
+import type { Json } from '../../types/database.types'
+
 interface JsonViewerProps {
-  data: Record<string, unknown>
+  data: Json
 }
 
 export function JsonViewer({ data }: JsonViewerProps) {

@@ -93,9 +93,7 @@ export class ErrorBoundary extends React.Component<
 
             {/* Error Details - Scrollable */}
             <div className="mb-6 max-h-[50vh] overflow-auto">
-              <JsonViewer
-                data={details as unknown as Record<string, unknown>}
-              />
+              <JsonViewer data={details} />
             </div>
 
             {/* Buttons */}
