@@ -22,7 +22,17 @@ export function ClusterVisualizationPage() {
 
   return (
     <Layout>
-      <ClusteringVisualization />
+      <div className="flex h-full min-h-0 flex-col">
+        <header className="flex-shrink-0">
+          <h1 className="text-2xl font-semibold text-slate-100">
+            Cluster Visualization
+          </h1>
+        </header>
+
+        <section className="mt-4 flex-1 min-h-0 overflow-y-auto">
+          <ClusteringVisualization />
+        </section>
+      </div>
     </Layout>
   )
 }

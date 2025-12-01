@@ -11,7 +11,7 @@ export function ClusteringVisualization() {
 
   if (visualizationResponseIsLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex h-full items-center justify-center">
         <LoadingSpinner size="lg" className="text-slate-400" />
       </div>
     )
@@ -34,7 +34,7 @@ export function ClusteringVisualization() {
   }
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col">
+    <div className="flex h-full flex-col">
       {/* Full-height plot */}
       <div className="flex-1 bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
         <Plot

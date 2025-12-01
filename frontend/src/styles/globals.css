@@ -15,10 +15,45 @@
   --spacing-12: 3rem;
 }
 
+html,
+body,
+#root {
+  height: 100%;
+}
+
 body {
   font-family:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   line-height: 1.6;
   background-color: #0f172a;
   color: #e2e8f0;
+  margin: 0;
+  overflow: hidden;
+}
+
+/* Global scrollbar styling */
+* {
+  scrollbar-width: thin; /* Firefox */
+  /* thumb, track - darker thumb by default, transparent track */
+  scrollbar-color: #64748b transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent; /* removes visible gutter */
+}
+
+*::-webkit-scrollbar-thumb {
+  /* darker slate for default thumb, similar to text but slightly darker */
+  background-color: #64748b;
+  border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  /* lighter/near-white on hover to match lighter text */
+  background-color: #e2e8f0;
 }
