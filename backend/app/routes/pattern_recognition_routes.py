@@ -2,7 +2,6 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.core.dependencies import get_current_admin
 from app.schemas.relationship_schemas import RelationshipCreate
 from app.services.pattern_recognition_service import (
     PatternRecognitionService,
@@ -18,7 +17,7 @@ async def analyze_relationships(
     pattern_service: PatternRecognitionService = Depends(
         get_pattern_recognition_service
     ),
-    admin=Depends(get_current_admin),
+    # admin=Depends(get_current_admin),
 ) -> list[RelationshipCreate]:
     """
     Analyze relationships between classifications for a tenant.

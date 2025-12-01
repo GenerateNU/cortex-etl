@@ -53,10 +53,11 @@ async def analyze_category_relationships(
     # Converts to the dic to a string for the LLM prompt
     context_str = ""
     for name, files_info in sampled_contexts.items():
-        context_str += f"\n{name}:\n"
+        context_str += f"CLASSIFICATION: {name}\n"
         for file_info in files_info:
-            context_str += f"  {file_info['filename']}:\n"
-            context_str += f"    {json.dumps(file_info['data'], indent=4)}\n"
+            context_str += f"\n  File: {file_info['filename']}\n"
+            context_str += f"  Data: {json.dumps(file_info['data'], indent=6)}\n"
+        context_str += f"\n[End of {name} classification]\n"
 
     prompt = f"""Analyze relationships between these entities.
 
