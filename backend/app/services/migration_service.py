@@ -1,3 +1,4 @@
+# app/services/migration_service.py
 from uuid import UUID
 
 from fastapi import Depends
@@ -12,9 +13,6 @@ class MigrationService:
         self.supabase = supabase
 
     async def get_migrations(self, tenant_id: UUID) -> list[Migration]:
-        """
-        Query migrations for the given tenant
-        """
         response = await (
             self.supabase.table("migrations")
             .select("id, tenant_id, name, sql, sequence")
@@ -51,25 +49,16 @@ class MigrationService:
                     "sequence": new_migration.sequence,
                 }
             )
-            .select("id")
             .execute()
         )
 
+        # Supabase returns the inserted row(s) in data
         return insert_response.data[0]["id"]
 
     async def execute_migration(self, str_sql: str) -> None:
-        """
-        Execute a single migration SQL statement using the execute_sql function.
-        """
-        await self.supabase.rpc(
-            "execute_sql",
-            {"query": str_sql},
-        ).execute()
+        await self.supabase.rpc("execute_sql", {"query": str_sql}).execute()
 
     async def execute_migrations(self, tenant_id: UUID) -> None:
-        """
-        Execute all migrations for a tenant.
-        """
         migrations = await self.get_migrations(tenant_id)
         for migration in migrations:
             await self.execute_migration(migration.sql)
@@ -78,5 +67,4 @@ class MigrationService:
 def get_migration_service(
     supabase: AsyncClient = Depends(get_async_supabase),
 ) -> MigrationService:
-    """Instantiates a MigrationService object in route parameters"""
     return MigrationService(supabase)

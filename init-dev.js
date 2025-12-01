@@ -58,11 +58,11 @@ function parseSupabaseStatus(output) {
   if (output.STUDIO_URL) {
     env.STUDIO_URL = output.STUDIO_URL;
   }
-  if (output.ANON_KEY) {
-    env.SUPABASE_ANON_KEY = output.ANON_KEY;
+  if (output.PUBLISHABLE_KEY) {
+    env.SUPABASE_PUBLISHABLE_KEY = output.PUBLISHABLE_KEY;
   }
-  if (output.SERVICE_ROLE_KEY) {
-    env.SUPABASE_SERVICE_ROLE_KEY = output.SERVICE_ROLE_KEY;
+  if (output.SECRET_KEY) {
+    env.SUPABASE_SECRET_KEY = output.SECRET_KEY;
   }
 
   return env;
@@ -77,7 +77,7 @@ DOCKERFILE=Dockerfile.dev
 
 # Frontend Variables (browser-accessible)
 VITE_SUPABASE_URL=${cliEnv.SUPABASE_URL || "http://localhost:54321"}
-VITE_SUPABASE_ANON_KEY=${cliEnv.SUPABASE_ANON_KEY || ""}
+VITE_SUPABASE_PUBLISHABLE_KEY=${cliEnv.SUPABASE_PUBLISHABLE_KEY || ""}
 VITE_API_BASE_URL=http://localhost:8000
 
 # Backend Variables (container-accessible)
@@ -85,7 +85,7 @@ BACKEND_SUPABASE_URL=${
     cliEnv.SUPABASE_URL?.replace("127.0.0.1", "host.docker.internal") ||
     "http://host.docker.internal:54321"
   }
-BACKEND_SUPABASE_SERVICE_ROLE_KEY=${cliEnv.SUPABASE_SERVICE_ROLE_KEY || ""}
+BACKEND_SUPABASE_SECRET_KEY=${cliEnv.SUPABASE_SECRET_KEY || ""}
 
 # Webhook Configuration
 WEBHOOK_BASE_URL=http://host.docker.internal:8000
