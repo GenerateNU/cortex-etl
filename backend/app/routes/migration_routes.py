@@ -2,6 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from app.core.dependencies import get_current_admin
 from app.schemas.classification_schemas import Classification
 from app.schemas.migration_schemas import Migration, MigrationCreate
 from app.schemas.relationship_schemas import Relationship
@@ -44,7 +45,7 @@ async def generate_migrations(
     classification_service: ClassificationService = Depends(get_classification_service),
     relationship_service: RelationshipService = Depends(get_relationship_service),
     migration_service: MigrationService = Depends(get_migration_service),
-    # admin=Depends(get_current_admin),
+    admin=Depends(get_current_admin),
 ) -> list[Migration]:
     """
     Deterministically generate *new* migrations for a tenant based on:
@@ -109,7 +110,7 @@ async def generate_migrations(
 async def execute_migrations(
     tenant_id: UUID,
     migration_service: MigrationService = Depends(get_migration_service),
-    # admin=Depends(get_current_admin),
+    admin=Depends(get_current_admin),
 ) -> dict:
     """
     Execute all migrations for a tenant (in sequence order) using the execute_sql function.
