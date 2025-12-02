@@ -43,4 +43,18 @@ export const QUERY_KEYS = {
     visualization: (tenantId: string | undefined) =>
       [...QUERY_KEYS.classifications.visualizations(), tenantId] as const,
   },
+
+  relationships: {
+    all: () => ['relationships'] as const,
+    lists: () => [...QUERY_KEYS.relationships.all(), 'list'] as const,
+    list: (tenantId: string | undefined) =>
+      [...QUERY_KEYS.relationships.lists(), tenantId] as const,
+  },
+
+  migrations: {
+    all: () => ['migrations'] as const,
+    lists: () => [...QUERY_KEYS.migrations.all(), 'list'] as const,
+    list: (tenantId: string | undefined) =>
+      [...QUERY_KEYS.migrations.lists(), tenantId] as const,
+  },
 } as const
