@@ -119,3 +119,38 @@ async def execute_migrations(
         return {"status": "ok"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/connection-url/{tenant_id}")
+async def get_tenant_connection_url(
+    tenant_id: UUID,
+    include_public: bool = False,
+    # admin=Depends(get_current_admin),
+) -> dict:
+    """
+    Get a PostgreSQL connection URL for a specific tenant.
+
+    This URL is scoped to only show the tenant's generated tables.
+
+    Query params:
+        include_public: If true, also include public schema (for shared tables)
+
+    Example:
+        GET /migrations/connection-url/{tenant_id}
+        GET /migrations/connection-url/{tenant_id}?include_public=true
+    """
+    from app.utils.tenant_connection import get_schema_name, get_tenant_connection_url
+
+    try:
+        url = get_tenant_connection_url(tenant_id, include_public)
+        schema = get_schema_name(tenant_id)
+
+        return {
+            "tenant_id": str(tenant_id),
+            "schema_name": schema,
+            "connection_url": url,
+            "includes_public_schema": include_public,
+            "note": "Use this URL to connect and see only this tenant's generated tables",
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
