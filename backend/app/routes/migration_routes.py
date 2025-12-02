@@ -125,7 +125,7 @@ async def execute_migrations(
 async def get_tenant_connection_url(
     tenant_id: UUID,
     include_public: bool = False,
-    # admin=Depends(get_current_admin),
+    admin=Depends(get_current_admin),
 ) -> dict:
     """
     Get a PostgreSQL connection URL for a specific tenant.
