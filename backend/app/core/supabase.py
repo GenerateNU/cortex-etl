@@ -10,7 +10,7 @@ async def get_async_supabase() -> AsyncClient:
     global supabase
     if supabase is None:
         supabase = await acreate_client(
-        os.getenv("BACKEND_SUPABASE_URL"), os.getenv("BACKEND_SUPABASE_SECRET_KEY")
+            os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_SECRET_KEY")
         )
         print("Supabase Initialized")
     return supabase
