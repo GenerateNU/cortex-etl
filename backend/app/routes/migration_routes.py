@@ -27,7 +27,7 @@ router = APIRouter(prefix="/migrations", tags=["Migrations"])
 async def list_migrations(
     tenant_id: UUID,
     migration_service: MigrationService = Depends(get_migration_service),
-    # admin=Depends(get_current_admin),
+    admin=Depends(get_current_admin),
 ) -> list[Migration]:
     """
     Return all migrations for a tenant in sequence order.
