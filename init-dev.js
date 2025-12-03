@@ -61,8 +61,8 @@ function parseSupabaseStatus(output) {
   if (output.PUBLISHABLE_KEY) {
     env.SUPABASE_PUBLISHABLE_KEY = output.PUBLISHABLE_KEY;
   }
-  if (output.SECRET_KEY) {
-    env.SUPABASE_SECRET_KEY = output.SECRET_KEY;
+  if (output.SERVICE_ROLE_KEY) {
+    env.SUPABASE_SERVICE_ROLE_KEY = output.SERVICE_ROLE_KEY;
   }
 
   return env;
@@ -85,7 +85,7 @@ BACKEND_SUPABASE_URL=${
     cliEnv.SUPABASE_URL?.replace("127.0.0.1", "host.docker.internal") ||
     "http://host.docker.internal:54321"
   }
-BACKEND_SUPABASE_SECRET_KEY=${cliEnv.SUPABASE_SECRET_KEY || ""}
+BACKEND_SUPABASE_SERVICE_ROLE_KEY=${cliEnv.SUPABASE_SERVICE_ROLE_KEY || ""}
 
 # Webhook Configuration
 WEBHOOK_BASE_URL=http://host.docker.internal:8000

@@ -78,13 +78,9 @@ async def create_classifications(
     What type of documents are these? Respond with ONLY the category name.
     Do not include any explanation or punctuation."""
 
-        try:
-            response = await client.chat(prompt, temperature=0.3, max_tokens=50)
-            category_name = response.choices[0].message.content.strip()
-            if not category_name:
-                category_name = f"Document Type {cluster_id}"
-        except Exception as e:
-            print(f"  → Error generating name: {e}")
+        response = await client.chat(prompt, temperature=0.3, max_tokens=50)
+        category_name = response.choices[0].message.content.strip()
+        if not category_name:
             category_name = f"Document Type {cluster_id}"
 
         classification_names.append(category_name)
