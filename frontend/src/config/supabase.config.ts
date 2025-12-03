@@ -4,9 +4,6 @@ import type { Database } from '../types/database.types'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
 
-console.log('supabaseURL:', supabaseUrl)
-console.log('supabasePublishableKey:', supabasePublishableKey)
-
 if (!supabaseUrl || !supabasePublishableKey) {
   throw new Error('Missing Supabase environment variables')
 }
