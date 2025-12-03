@@ -9,7 +9,7 @@ from litellm.types.utils import EmbeddingResponse, ModelResponse
 class ModelType(Enum):
     """Available LLM models."""
 
-    GEMINI_PRO = "gemini/gemini-3-pro"
+    GEMINI_PRO = "gemini/gemini-3-pro-preview"
     GEMINI_FLASH = "gemini/gemini-2.5-flash"
 
 
