@@ -6,24 +6,19 @@ steps:
       - "--build-arg=VITE_SUPABASE_URL=${_VITE_SUPABASE_URL}"
       - "--build-arg=VITE_SUPABASE_PUBLISHABLE_KEY=${_VITE_SUPABASE_PUBLISHABLE_KEY}"
       - "--build-arg=VITE_API_BASE_URL=${_VITE_API_BASE_URL}"
-      - "-t=${_IMAGE_NAME}"
+      - "-t"
+      - "gcr.io/$PROJECT_ID/frontend:$SHORT_SHA"
       - "."
   - name: "gcr.io/cloud-builders/docker"
-    args: ["push", "${_IMAGE_NAME}"]
+    args: ["push", "gcr.io/$PROJECT_ID/frontend:$SHORT_SHA"]
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
-    entrypoint: gcloud
     args:
       - "run"
       - "deploy"
-      - "${_SERVICE_NAME}"
-      - "--image=${_IMAGE_NAME}"
-      - "--region=${_REGION}"
+      - "frontend"
+      - "--image=gcr.io/$PROJECT_ID/frontend:$SHORT_SHA"
+      - "--region=us-central1"
       - "--platform=managed"
 
 images:
-  - "${_IMAGE_NAME}"
-
-substitutions:
-  _IMAGE_NAME: "gcr.io/${PROJECT_ID}/frontend:${SHORT_SHA}"
-  _SERVICE_NAME: "frontend"
-  _REGION: "us-central1"
+  - "gcr.io/$PROJECT_ID/frontend:$SHORT_SHA"
