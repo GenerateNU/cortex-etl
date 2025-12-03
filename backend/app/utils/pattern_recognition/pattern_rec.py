@@ -69,7 +69,7 @@ async def analyze_category_relationships(
 
     Return JSON:
     [
-    {{"from_type": "Students", "to_type": "Classes", "relationship_type": "many-to-one"}}
+    {{"from_type": "Students", "to_type": "Classes", "relationship_type": "one-to-many"}}
     ]
 
     Rules:
