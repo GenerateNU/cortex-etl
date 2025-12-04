@@ -139,9 +139,9 @@ export function DocumentPage() {
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="flex h-full min-h-0 flex-col">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex-shrink-0 flex justify-between items-center mb-6">
           <h1 className="text-2xl font-semibold text-slate-100">Documents</h1>
           {isTenant && (
             <Button onClick={() => setIsUploadModalOpen(true)}>
@@ -150,98 +150,104 @@ export function DocumentPage() {
           )}
         </div>
         {/* Files List */}
-        <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
-          {filesIsLoading ? (
-            <div className="text-center py-12 text-slate-400">Loading...</div>
-          ) : files && files.length > 0 ? (
-            <div className="space-y-3">
-              {files.map(file => (
-                <div
-                  key={file.id}
-                  className="flex items-center justify-between p-4 bg-slate-700 rounded-lg"
-                >
-                  <div className="flex items-center space-x-3">
-                    <svg
-                      className="w-8 h-8 text-slate-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                      />
-                    </svg>
-                    <div>
-                      <p className="text-slate-100 font-medium">{file.name}</p>
-                      <p className="text-sm text-slate-400">
-                        {file.created_at
-                          ? new Date(file.created_at).toLocaleDateString()
-                          : 'No Created At'}
-                      </p>
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
+            {filesIsLoading ? (
+              <div className="text-center py-12 text-slate-400">Loading...</div>
+            ) : files && files.length > 0 ? (
+              <div className="space-y-3">
+                {files.map(file => (
+                  <div
+                    key={file.id}
+                    className="flex items-center justify-between p-4 bg-slate-700 rounded-lg"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <svg
+                        className="w-8 h-8 text-slate-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                        />
+                      </svg>
+                      <div>
+                        <p className="text-slate-100 font-medium">
+                          {file.name}
+                        </p>
+                        <p className="text-sm text-slate-400">
+                          {file.created_at
+                            ? new Date(file.created_at).toLocaleDateString()
+                            : 'No Created At'}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {isAdmin && <StatusBadge status={getFileStatus(file.id)} />}
-                    {isAdmin && (
+                    <div className="flex items-center space-x-2">
+                      {isAdmin && (
+                        <StatusBadge status={getFileStatus(file.id)} />
+                      )}
+                      {isAdmin && (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => handleRetryExtract(file)}
+                          loading={isRetryingExtract}
+                        >
+                          Retry
+                        </Button>
+                      )}
+                      {}
                       <Button
                         variant="primary"
                         size="sm"
-                        onClick={() => handleRetryExtract(file)}
-                        loading={isRetryingExtract}
+                        onClick={() => handleView(file)}
                       >
-                        Retry
+                        View
                       </Button>
-                    )}
-                    {}
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => handleView(file)}
-                    >
-                      View
-                    </Button>
-                    {isTenant && (
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={() => handleDelete(file.id)}
-                        loading={isDeletingFile}
-                      >
-                        Delete
-                      </Button>
-                    )}
+                      {isTenant && (
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => handleDelete(file.id)}
+                          loading={isDeletingFile}
+                        >
+                          Delete
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <svg
-                className="mx-auto h-16 w-16 text-slate-600 mb-4"
-                stroke="currentColor"
-                fill="none"
-                viewBox="0 0 48 48"
-              >
-                <path
-                  d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                  strokeWidth={1.5}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <h3 className="text-lg font-medium text-slate-300 mb-2">
-                No documents yet
-              </h3>
-              <p className="text-slate-400">
-                {isTenant
-                  ? 'Upload files to get started with data processing'
-                  : 'No files uploaded for this tenant'}
-              </p>
-            </div>
-          )}
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <svg
+                  className="mx-auto h-16 w-16 text-slate-600 mb-4"
+                  stroke="currentColor"
+                  fill="none"
+                  viewBox="0 0 48 48"
+                >
+                  <path
+                    d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                    strokeWidth={1.5}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <h3 className="text-lg font-medium text-slate-300 mb-2">
+                  No documents yet
+                </h3>
+                <p className="text-slate-400">
+                  {isTenant
+                    ? 'Upload files to get started with data processing'
+                    : 'No files uploaded for this tenant'}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
         {/* Upload Modal */}
         {isTenant && (
