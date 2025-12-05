@@ -32,8 +32,8 @@ export const MigrationsStep: FC<MigrationsStepProps> = ({ onCompleted }) => {
   }
 
   return (
-    <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 space-y-6">
-      <div className="flex items-start justify-between gap-4">
+    <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 flex flex-col h-full">
+      <div className="flex items-start justify-between gap-4 mb-6">
         <div>
           <h2 className="text-xl font-semibold text-slate-100">
             Generate and execute migrations
@@ -43,7 +43,7 @@ export const MigrationsStep: FC<MigrationsStepProps> = ({ onCompleted }) => {
             migrations, then execute them against your tenant database.
           </p>
         </div>
-        <div className="flex flex-col gap-2">
+        <div className="flex gap-2">
           <Button
             onClick={handleGenerate}
             loading={isGeneratingMigrations}
@@ -86,8 +86,8 @@ export const MigrationsStep: FC<MigrationsStepProps> = ({ onCompleted }) => {
           No migrations generated yet. Generate migrations to see them here.
         </div>
       ) : (
-        <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-          {migrations.map(m => (
+        <div className="flex-1 overflow-y-auto pr-1 space-y-2">
+          {[...migrations].reverse().map(m => (
             <div
               key={m.migration_id}
               className="rounded-lg border border-slate-700 bg-slate-900/40 p-4"

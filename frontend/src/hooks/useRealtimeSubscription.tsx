@@ -17,6 +17,10 @@ export function useRealtimeSubscription({
   schema = 'public',
   onEvent,
 }: UseRealtimeSubscriptionProps) {
+  // Disable realtime subscription for now
+  return
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     const channel = supabase
       .channel(`${table}_changes`)
