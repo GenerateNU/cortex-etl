@@ -1,4 +1,5 @@
 # app/utils/migrations.py
+import hashlib
 
 from app.schemas.classification_schemas import Classification
 from app.schemas.migration_schemas import Migration, MigrationCreate
@@ -64,6 +65,63 @@ def _get_dropped_tables(migrations: list[Migration], schema_name: str) -> set[st
     return dropped
 
 
+def _truncate_constraint_name(name: str, max_length: int = 63) -> str:
+    """
+    Truncate constraint name to max_length bytes while preserving uniqueness.
+    PostgreSQL identifier limit is 63 bytes.
+    """
+    # Convert to bytes to check actual length
+    name_bytes = name.encode("utf-8")
+    if len(name_bytes) <= max_length:
+        return name
+
+    # Truncate to max_length bytes, ensuring we don't cut in the middle of a multi-byte character
+    truncated_bytes = name_bytes[:max_length]
+    # Remove any incomplete trailing bytes
+    while truncated_bytes and (truncated_bytes[-1] & 0xC0) == 0x80:
+        truncated_bytes = truncated_bytes[:-1]
+
+    return truncated_bytes.decode("utf-8", errors="ignore")
+
+
+def _make_unique_constraint_name(
+    base_name: str, existing_names: set[str], max_length: int = 63
+) -> str:
+    """
+    Generate a unique constraint name, truncating if necessary.
+    If truncated name conflicts, appends a hash suffix.
+    """
+    # First try the base name
+    if base_name not in existing_names:
+        truncated = _truncate_constraint_name(base_name, max_length)
+        if truncated not in existing_names:
+            existing_names.add(truncated)
+            return truncated
+
+    # If base name is taken, truncate and add hash suffix
+    truncated = _truncate_constraint_name(
+        base_name, max_length - 9
+    )  # Reserve space for _XXXXXXXX
+    # Generate a short hash from the original name
+    hash_suffix = hashlib.md5(base_name.encode("utf-8")).hexdigest()[:8]
+    unique_name = f"{truncated}_{hash_suffix}"
+
+    # Ensure it's still within limit
+    unique_name = _truncate_constraint_name(unique_name, max_length)
+
+    # If still conflicts (unlikely), keep trying with different suffixes
+    counter = 0
+    while unique_name in existing_names and counter < 100:
+        counter += 1
+        hash_suffix = hashlib.md5(f"{base_name}_{counter}".encode()).hexdigest()[:8]
+        unique_name = _truncate_constraint_name(
+            f"{truncated}_{hash_suffix}", max_length
+        )
+
+    existing_names.add(unique_name)
+    return unique_name
+
+
 def create_migrations(
     classifications: list[Classification],
     relationships: list[Relationship],
@@ -116,7 +174,7 @@ def create_migrations(
             MigrationCreate(
                 tenant_id=tenant_id,
                 name=schema_migration_name,
-                sql=f"CREATE SCHEMA IF NOT EXISTS {schema_name};",
+                sql=f'CREATE SCHEMA IF NOT EXISTS "{schema_name}";',
                 sequence=next_seq,
             )
         )
@@ -148,7 +206,7 @@ def create_migrations(
             continue
 
         # Schema-qualified DROP with CASCADE
-        sql = f"DROP TABLE IF EXISTS {schema_name}.{clean_table_name} CASCADE;"
+        sql = f'DROP TABLE IF EXISTS "{schema_name}"."{clean_table_name}" CASCADE;'
 
         if tenant_id:
             new_migrations.append(
@@ -174,7 +232,7 @@ def create_migrations(
 
         # Schema-qualified CREATE
         sql = f"""
-CREATE TABLE IF NOT EXISTS {qualified_table_name} (
+CREATE TABLE IF NOT EXISTS "{schema_name}"."{table_name}" (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL,
     data JSONB NOT NULL,
@@ -194,6 +252,9 @@ CREATE TABLE IF NOT EXISTS {qualified_table_name} (
         next_seq += 1
 
     # ===== STEP 3: CREATE RELATIONSHIPS (in tenant schema) =====
+    # Track constraint names within this migration batch to ensure uniqueness
+    constraint_names_used = set()
+
     for rel in relationships:
         from_table = _table_name_for_classification(rel.from_classification)
         to_table = _table_name_for_classification(rel.to_classification)
@@ -219,42 +280,106 @@ CREATE TABLE IF NOT EXISTS {qualified_table_name} (
 
         if rel_type_norm == "ONE_TO_MANY":
             # Schema-qualified ALTER TABLE for one-to-many
+            # Constraint names don't need schema prefix since they're schema-qualified
+            base_constraint_name = f"fk_{from_table}_{to_table}"
+            constraint_name = _make_unique_constraint_name(
+                base_constraint_name, constraint_names_used
+            )
             sql = f"""
-ALTER TABLE {qualified_from}
-ADD COLUMN IF NOT EXISTS {to_table}_id UUID,
-ADD CONSTRAINT fk_{schema_name}_{from_table}_{to_table}
-    FOREIGN KEY ({to_table}_id)
-    REFERENCES {qualified_to}(id);
+DO $$
+BEGIN
+    ALTER TABLE "{schema_name}"."{from_table}"
+    ADD COLUMN IF NOT EXISTS "{to_table}_id" UUID;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint c
+        JOIN pg_namespace n ON c.connamespace = n.oid
+        WHERE c.conname = '{constraint_name}'
+        AND n.nspname = '{schema_name}'
+    ) THEN
+        ALTER TABLE "{schema_name}"."{from_table}"
+        ADD CONSTRAINT "{constraint_name}"
+        FOREIGN KEY ("{to_table}_id")
+        REFERENCES "{schema_name}"."{to_table}"(id);
+    END IF;
+END $$;
 """.strip()
 
         elif rel_type_norm == "ONE_TO_ONE":
             # Schema-qualified ALTER TABLE for one-to-one
+            # Constraint names don't need schema prefix since they're schema-qualified
+            base_constraint_name = f"fk_{from_table}_{to_table}"
+            constraint_name = _make_unique_constraint_name(
+                base_constraint_name, constraint_names_used
+            )
+            base_unique_constraint_name = f"{base_constraint_name}_unique"
+            unique_constraint_name = _make_unique_constraint_name(
+                base_unique_constraint_name, constraint_names_used
+            )
             sql = f"""
-ALTER TABLE {qualified_from}
-ADD COLUMN IF NOT EXISTS {to_table}_id UUID UNIQUE,
-ADD CONSTRAINT fk_{schema_name}_{from_table}_{to_table}
-    FOREIGN KEY ({to_table}_id)
-    REFERENCES {qualified_to}(id);
+DO $$
+BEGIN
+    ALTER TABLE "{schema_name}"."{from_table}"
+    ADD COLUMN IF NOT EXISTS "{to_table}_id" UUID;
+    
+    -- Add FK constraint if not exists
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint c
+        JOIN pg_namespace n ON c.connamespace = n.oid
+        WHERE c.conname = '{constraint_name}'
+        AND n.nspname = '{schema_name}'
+    ) THEN
+        ALTER TABLE "{schema_name}"."{from_table}"
+        ADD CONSTRAINT "{constraint_name}"
+        FOREIGN KEY ("{to_table}_id")
+        REFERENCES "{schema_name}"."{to_table}"(id);
+    END IF;
+    
+    -- Add UNIQUE constraint if not exists
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint c
+        JOIN pg_namespace n ON c.connamespace = n.oid
+        WHERE c.conname = '{unique_constraint_name}'
+        AND n.nspname = '{schema_name}'
+    ) THEN
+        ALTER TABLE "{schema_name}"."{from_table}"
+        ADD CONSTRAINT "{unique_constraint_name}" UNIQUE ("{to_table}_id");
+    END IF;
+END $$;
 """.strip()
 
         elif rel_type_norm == "MANY_TO_MANY":
             # Schema-qualified CREATE TABLE for join table
             join_table = f"{from_table}_{to_table}_join"
-            qualified_join = f"{schema_name}.{join_table}"
+
+            # Constraint names don't need schema prefix since they're schema-qualified
+            base_fk_from_name = f"fk_{join_table}_{from_table}"
+            base_fk_to_name = f"fk_{join_table}_{to_table}"
+            base_unique_name = f"uniq_{join_table}"
+
+            fk_from_constraint = _make_unique_constraint_name(
+                base_fk_from_name, constraint_names_used
+            )
+            fk_to_constraint = _make_unique_constraint_name(
+                base_fk_to_name, constraint_names_used
+            )
+            unique_constraint = _make_unique_constraint_name(
+                base_unique_name, constraint_names_used
+            )
 
             sql = f"""
-CREATE TABLE IF NOT EXISTS {qualified_join} (
+CREATE TABLE IF NOT EXISTS "{schema_name}"."{join_table}" (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    {from_table}_id UUID NOT NULL,
-    {to_table}_id UUID NOT NULL,
-    CONSTRAINT fk_{schema_name}_{join_table}_{from_table}
-        FOREIGN KEY ({from_table}_id)
-        REFERENCES {qualified_from}(id),
-    CONSTRAINT fk_{schema_name}_{join_table}_{to_table}
-        FOREIGN KEY ({to_table}_id)
-        REFERENCES {qualified_to}(id),
-    CONSTRAINT uniq_{schema_name}_{join_table}
-        UNIQUE ({from_table}_id, {to_table}_id)
+    "{from_table}_id" UUID NOT NULL,
+    "{to_table}_id" UUID NOT NULL,
+    CONSTRAINT "{fk_from_constraint}"
+        FOREIGN KEY ("{from_table}_id")
+        REFERENCES "{schema_name}"."{from_table}"(id),
+    CONSTRAINT "{fk_to_constraint}"
+        FOREIGN KEY ("{to_table}_id")
+        REFERENCES "{schema_name}"."{to_table}"(id),
+    CONSTRAINT "{unique_constraint}"
+        UNIQUE ("{from_table}_id", "{to_table}_id")
 );
 """.strip()
         else:

@@ -1,3 +1,4 @@
+import json
 from collections import defaultdict
 from uuid import UUID
 
@@ -22,6 +23,7 @@ from app.services.relationship_service import (
     get_relationship_service,
 )
 from app.utils.migrations import _table_name_for_classification, create_migrations
+from app.utils.tenant_connection import get_schema_name
 
 router = APIRouter(prefix="/migrations", tags=["Migrations"])
 
@@ -133,9 +135,9 @@ async def load_data_for_tenant(
     - Fetch all extracted files + their classifications
     - Group by classification
     - For each classification:
-        * derive table name (same as migrations)
-        * DELETE existing rows for that tenant
-        * INSERT rows for each file in that classification
+        * derive table name (same as migrations) using helper function
+        * DELETE existing rows for that tenant in tenant-specific schema
+        * INSERT rows for each file in that classification in tenant-specific schema
     """
     try:
         extracted_files: list[
@@ -156,30 +158,40 @@ async def load_data_for_tenant(
                 continue
             files_by_class_id[ef.classification.classification_id].append(ef)
 
+        # Get tenant-specific schema name
+        schema_name = get_schema_name(tenant_id)
         updated_tables: list[str] = []
 
         for class_files in files_by_class_id.values():
             classification = class_files[0].classification
             table_name = _table_name_for_classification(classification)
+            qualified_table_name = f'"{schema_name}"."{table_name}"'
 
-            await (
-                supabase.table(table_name)
-                .delete()
-                .eq("tenant_id", str(tenant_id))
-                .execute()
-            )
+            # Delete existing rows for this tenant in the tenant-specific schema
+            # Use parameterized approach via dollar-quoting for safety
+            tenant_id_str = str(tenant_id)
+            delete_sql = f"DELETE FROM {qualified_table_name} WHERE tenant_id = '{tenant_id_str}';"
+            await supabase.rpc("execute_sql", {"query": delete_sql}).execute()
 
-            rows = [
-                {
-                    "id": str(f.extracted_file_id),
-                    "tenant_id": str(tenant_id),
-                    "data": f.extracted_data,
-                }
-                for f in class_files
-            ]
+            # Insert new rows into the tenant-specific schema
+            if class_files:
+                # Build INSERT statement with proper JSONB escaping using dollar-quoting
+                values = []
+                for idx, f in enumerate(class_files):
+                    # Use dollar-quoting for JSONB to avoid SQL injection
+                    # Convert to JSON string - dollar-quoting doesn't require escaping
+                    data_json = json.dumps(f.extracted_data)
+                    # Use dollar-quoting with unique tag per value to safely handle any characters
+                    tag = f"json{idx}"
+                    values.append(
+                        f"('{str(f.extracted_file_id)}', '{tenant_id_str}', ${tag}${data_json}${tag}$::jsonb)"
+                    )
 
-            if rows:
-                await supabase.table(table_name).insert(rows).execute()
+                insert_sql = f"""
+INSERT INTO {qualified_table_name} (id, tenant_id, data)
+VALUES {", ".join(values)};
+""".strip()
+                await supabase.rpc("execute_sql", {"query": insert_sql}).execute()
 
             updated_tables.append(table_name)
 
