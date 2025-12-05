@@ -125,6 +125,9 @@ export const useLoadData = () => {
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.migrations.list(currentTenant?.id),
       })
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.migrations.connectionUrlDetail(currentTenant?.id),
+      })
     },
   })
 
