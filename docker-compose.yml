@@ -13,7 +13,7 @@ services:
       WEBHOOK_BASE_URL: ${WEBHOOK_BASE_URL}
       WEBHOOK_SECRET: ${WEBHOOK_SECRET}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: ${DB_URL}
     volumes:
       - ./backend:/app
     extra_hosts:

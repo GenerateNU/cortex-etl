@@ -1,4 +1,5 @@
 import json
+import os
 
 from app.core.litellm import LLMClient, ModelType
 
@@ -16,7 +17,11 @@ model.set_system_prompt(
 async def extract_pdf_data(
     pdf_bytes: bytes,
     file_name: str,
-    llm_model: ModelType = ModelType.GEMINI_PRO,
+    llm_model: ModelType = (
+        ModelType.GEMINI_FLASH
+        if os.getenv("ENVIRONMENT") == "development"
+        else ModelType.GEMINI_PRO
+    ),
 ) -> dict:
     model.set_model(llm_model)
     response = await model.chat(
