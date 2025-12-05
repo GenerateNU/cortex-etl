@@ -8,9 +8,20 @@ from app.schemas.relationship_schemas import Relationship
 def _table_name_for_classification(c: Classification) -> str:
     """
     Deterministic mapping from classification name to SQL table name.
+    Removes spaces and special characters, keeps only alphanumeric.
+    Example: "Product Brochure/Leaflet" -> "productbrochureleaflet"
     Example: "Robot Specifications" -> "robotspecifications"
     """
-    return c.name.replace(" ", "").lower()
+    # Remove spaces and convert to lowercase
+    name = c.name.lower()
+    # Keep only alphanumeric characters
+    name = "".join(char if char.isalnum() else "" for char in name)
+
+    # Ensure it starts with a letter (not a number)
+    if name and name[0].isdigit():
+        name = "tbl_" + name
+
+    return name
 
 
 def _get_schema_name(tenant_id) -> str:
