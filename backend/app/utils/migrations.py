@@ -249,7 +249,89 @@ CREATE TABLE IF NOT EXISTS "{schema_name}"."{table_name}" (
         existing_names.add(mig_name)
         next_seq += 1
 
-    # ===== STEP 3: CREATE RELATIONSHIPS (in tenant schema) =====
+    # ===== STEP 3: DROP REMOVED RELATIONSHIPS (tables still present) =====
+    def _parse_relationship_migration_name(name: str) -> tuple[str, str, str] | None:
+        """
+        Return (rel_type, from_table, to_table) from migration name like
+        rel_one_to_many_schema_from_to. Assumes underscores are not in type tokens
+        except as separators.
+        """
+        if not name.startswith("rel_"):
+            return None
+        parts = name.split("_")
+        # rel, type..., schema, from_table, to_table (at least 5 parts)
+        if len(parts) < 5:
+            return None
+        rel_type = "_".join(parts[1:-3])
+        from_table = parts[-2]
+        to_table = parts[-1]
+        return rel_type.upper(), from_table, to_table
+
+    existing_relationships: set[tuple[str, str, str]] = set()
+    for m in initial_migrations:
+        parsed = _parse_relationship_migration_name(m.name)
+        if not parsed:
+            continue
+        rel_type, from_table, to_table = parsed
+        if from_table in active_tables and to_table in active_tables:
+            existing_relationships.add(parsed)
+
+    desired_relationships: set[tuple[str, str, str]] = set()
+    for rel in relationships:
+        from_table = _table_name_for_classification(rel.from_classification)
+        to_table = _table_name_for_classification(rel.to_classification)
+        if (
+            from_table not in current_classification_tables
+            or to_table not in current_classification_tables
+        ):
+            continue
+        raw_type = getattr(rel.type, "value", rel.type)
+        rel_type_norm = str(raw_type).upper().replace("-", "_")
+        desired_relationships.add((rel_type_norm, from_table, to_table))
+
+    relationships_to_drop = existing_relationships - desired_relationships
+
+    for rel_type_norm, from_table, to_table in sorted(relationships_to_drop):
+        mig_name = (
+            f"drop_rel_{rel_type_norm.lower()}_{schema_name}_{from_table}_{to_table}"
+        )
+        if mig_name in existing_names:
+            continue
+
+        if rel_type_norm in {"ONE_TO_MANY", "ONE_TO_ONE"}:
+            sql = f"""
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = '{schema_name}'
+          AND table_name = '{from_table}'
+    ) THEN
+        -- Drop the relationship column; cascades remove FK/unique constraints
+        ALTER TABLE "{schema_name}"."{from_table}"
+        DROP COLUMN IF EXISTS "{to_table}_id" CASCADE;
+    END IF;
+END $$;
+""".strip()
+        elif rel_type_norm == "MANY_TO_MANY":
+            join_table = f"{from_table}_{to_table}_join"
+            sql = f'DROP TABLE IF EXISTS "{schema_name}"."{join_table}" CASCADE;'
+        else:
+            sql = f"-- TODO: drop logic for relationship type {rel_type_norm}"
+
+        new_migrations.append(
+            MigrationCreate(
+                tenant_id=tenant_id,
+                name=mig_name,
+                sql=sql,
+                sequence=next_seq,
+            )
+        )
+        existing_names.add(mig_name)
+        next_seq += 1
+
+    # ===== STEP 4: CREATE RELATIONSHIPS (in tenant schema) =====
     # Track constraint names within this migration batch to ensure uniqueness
     constraint_names_used = set()
 
@@ -350,7 +432,6 @@ END $$;
             # Constraint names don't need schema prefix since they're schema-qualified
             base_fk_from_name = f"fk_{join_table}_{from_table}"
             base_fk_to_name = f"fk_{join_table}_{to_table}"
-            base_unique_name = f"uniq_{join_table}"
 
             fk_from_constraint = _make_unique_constraint_name(
                 base_fk_from_name, constraint_names_used
@@ -358,13 +439,9 @@ END $$;
             fk_to_constraint = _make_unique_constraint_name(
                 base_fk_to_name, constraint_names_used
             )
-            unique_constraint = _make_unique_constraint_name(
-                base_unique_name, constraint_names_used
-            )
 
             sql = f"""
 CREATE TABLE IF NOT EXISTS "{schema_name}"."{join_table}" (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     "{from_table}_id" UUID NOT NULL,
     "{to_table}_id" UUID NOT NULL,
     CONSTRAINT "{fk_from_constraint}"
@@ -373,8 +450,7 @@ CREATE TABLE IF NOT EXISTS "{schema_name}"."{join_table}" (
     CONSTRAINT "{fk_to_constraint}"
         FOREIGN KEY ("{to_table}_id")
         REFERENCES "{schema_name}"."{to_table}"(id),
-    CONSTRAINT "{unique_constraint}"
-        UNIQUE ("{from_table}_id", "{to_table}_id")
+    PRIMARY KEY ("{from_table}_id", "{to_table}_id")
 );
 """.strip()
         else:
