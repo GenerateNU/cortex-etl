@@ -5,11 +5,15 @@ import { ClassificationStep } from '../components/admin/steps/ClassificationStep
 import { AssignClassificationsStep } from '../components/admin/steps/AssignClassificationsStep'
 import { PatternRecognitionStep } from '../components/admin/steps/PatternRecognitionStep'
 import { MigrationsStep } from '../components/admin/steps/MigrationsStep'
+import { ConnectionUrlStep } from '../components/admin/steps/ConnectionUrlStep'
 import { useGetClassifications } from '../hooks/classification.hooks'
 import { useGetAllFiles } from '../hooks/files.hooks'
 import { useGetAllExtractedFiles } from '../hooks/extractedFile.hooks'
 import { useGetRelationships } from '../hooks/patternRecognition.hooks'
-import { useListMigrations } from '../hooks/migrations.hooks'
+import {
+  useListMigrations,
+  useGetConnectionUrl,
+} from '../hooks/migrations.hooks'
 
 export function AdminPage() {
   const [activeStep, setActiveStep] = useState(0)
@@ -27,13 +31,16 @@ export function AdminPage() {
       .length ?? 0
   const hasExtractedFiles =
     extractedFiles?.some(ef => ef.status === 'completed') ?? false
+  const { connectionUrl } = useGetConnectionUrl()
   const hasRelationships = (relationships?.length ?? 0) > 0
   const hasMigrations = (migrations?.length ?? 0) > 0
+  const hasConnectionUrl = !!connectionUrl
 
   const step1Complete = hasClassifications
   const step2Complete = step1Complete && totalFiles > 0 && classifiedFiles > 0
   const step3Complete = hasRelationships
   const step4Complete = hasMigrations
+  const step5Complete = hasConnectionUrl
 
   const steps: AdminStep[] = [
     {
@@ -68,13 +75,24 @@ export function AdminPage() {
           ? 'pending'
           : 'disabled',
     },
+    {
+      label: 'Get Connection URL',
+      status: step5Complete
+        ? 'completed'
+        : activeStep === 4
+          ? 'current'
+          : step4Complete
+            ? 'pending'
+            : 'disabled',
+    },
   ]
 
   const canGoNext =
     (activeStep === 0 && step1Complete && hasExtractedFiles) ||
     (activeStep === 1 && step2Complete) ||
     (activeStep === 2 && step3Complete) ||
-    activeStep === 3
+    activeStep === 3 ||
+    activeStep === 4
 
   const handleNext = () => {
     if (canGoNext && activeStep < steps.length - 1) {
@@ -115,6 +133,7 @@ export function AdminPage() {
             <PatternRecognitionStep onCompleted={() => setActiveStep(3)} />
           )}
           {activeStep === 3 && <MigrationsStep />}
+          {activeStep === 4 && <ConnectionUrlStep />}
         </div>
 
         <div className="flex-shrink-0 mt-4 flex items-center justify-between">

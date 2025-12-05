@@ -99,3 +99,40 @@ export const useExecuteMigrations = () => {
     executeMigrationsError: mutation.error,
   }
 }
+
+export interface ConnectionUrlResponse {
+  tenant_id: string
+  schema_name: string
+  connection_url: string
+  includes_public_schema: boolean
+  note: string
+}
+
+export const useGetConnectionUrl = () => {
+  const { currentTenant } = useAuth()
+
+  const {
+    data: connectionUrl,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: QUERY_KEYS.migrations.connectionUrlDetail(currentTenant?.id),
+    enabled: !!currentTenant?.id,
+    queryFn: async (): Promise<ConnectionUrlResponse> => {
+      if (!currentTenant) {
+        throw new Error('No tenant selected')
+      }
+
+      const { data } = await api.get(
+        `/migrations/connection-url/${currentTenant.id}`
+      )
+      return data
+    },
+  })
+
+  return {
+    connectionUrl,
+    connectionUrlIsLoading: isLoading,
+    connectionUrlError: error,
+  }
+}
