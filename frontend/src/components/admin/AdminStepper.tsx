@@ -9,16 +9,11 @@ export interface AdminStep {
 
 interface AdminStepperProps {
   steps: AdminStep[]
-  activeStep: number
   onStepClick?: (index: number) => void
 }
 
 // All items are aligned to the top. Connectors have top margin to center with circles.
-export const AdminStepper: FC<AdminStepperProps> = ({
-  steps,
-  activeStep,
-  onStepClick,
-}) => {
+export const AdminStepper: FC<AdminStepperProps> = ({ steps, onStepClick }) => {
   // Height of the circle is 2.25rem (h-9, 36px), so to center a 4px (1rem) connector:
   // Top margin should be half of circle minus half of connector = (36-4)/2 = 16px (1rem)
   // So use mt-4 or inline marginTop: 16px for precise alignment.
@@ -37,8 +32,7 @@ export const AdminStepper: FC<AdminStepperProps> = ({
         }}
       >
         {steps.map((step, index) => {
-          const isClickable =
-            !!onStepClick && step.status !== 'disabled' && index <= activeStep
+          const isClickable = !!onStepClick && step.status !== 'disabled'
 
           const baseCircleClasses =
             'flex h-9 w-9 items-center justify-center rounded-full border-2 text-sm font-semibold transition-colors'

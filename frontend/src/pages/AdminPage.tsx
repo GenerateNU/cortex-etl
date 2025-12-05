@@ -115,10 +115,9 @@ export function AdminPage() {
         <div className="flex-shrink-0 mb-4">
           <AdminStepper
             steps={steps}
-            activeStep={activeStep}
             onStepClick={index => {
-              // allow navigating back, but not skipping forward past available steps
-              if (index <= activeStep) {
+              const step = steps[index]
+              if (step.status !== 'disabled') {
                 setActiveStep(index)
               }
             }}
