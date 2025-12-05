@@ -80,11 +80,20 @@ class PatternRecognitionService:
     ) -> list[RelationshipCreate]:
         """
         Main workflow:
-        1. Fetch classifications and extracted files
-        2. Run pattern recognition analysis
-        3. Store relationships in database
-        4. Return created relationships
+        1. Delete existing relationships for this tenant
+        2. Fetch classifications and extracted files
+        3. Run pattern recognition analysis
+        4. Store relationships in database
+        5. Return created relationships
         """
+        # DELETE existing relationships first to avoid duplicates
+        await (
+            self.supabase.table("relationships")
+            .delete()
+            .eq("tenant_id", str(tenant_id))
+            .execute()
+        )
+
         # Fetch data
         classifications = await self.get_classifications(tenant_id)
         extracted_files = await self.get_extracted_files(tenant_id)
