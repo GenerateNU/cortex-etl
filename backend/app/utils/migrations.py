@@ -1,4 +1,3 @@
-# app/utils/migrations.py
 import hashlib
 
 from app.schemas.classification_schemas import Classification
@@ -224,7 +223,6 @@ def create_migrations(
 
     for c in classifications:
         table_name = _table_name_for_classification(c)
-        qualified_table_name = f"{schema_name}.{table_name}"
         mig_name = f"create_table_{schema_name}_{table_name}"
 
         if mig_name in existing_names:
@@ -266,9 +264,6 @@ CREATE TABLE IF NOT EXISTS "{schema_name}"."{table_name}" (
         ):
             continue
 
-        qualified_from = f"{schema_name}.{from_table}"
-        qualified_to = f"{schema_name}.{to_table}"
-
         # Support both Enum and plain string for rel.type
         raw_type = getattr(rel.type, "value", rel.type)
         rel_type_norm = str(raw_type).upper().replace("-", "_")
@@ -290,7 +285,7 @@ DO $$
 BEGIN
     ALTER TABLE "{schema_name}"."{from_table}"
     ADD COLUMN IF NOT EXISTS "{to_table}_id" UUID;
-    
+
     IF NOT EXISTS (
         SELECT 1 FROM pg_constraint c
         JOIN pg_namespace n ON c.connamespace = n.oid
@@ -321,7 +316,7 @@ DO $$
 BEGIN
     ALTER TABLE "{schema_name}"."{from_table}"
     ADD COLUMN IF NOT EXISTS "{to_table}_id" UUID;
-    
+
     -- Add FK constraint if not exists
     IF NOT EXISTS (
         SELECT 1 FROM pg_constraint c
@@ -334,7 +329,7 @@ BEGIN
         FOREIGN KEY ("{to_table}_id")
         REFERENCES "{schema_name}"."{to_table}"(id);
     END IF;
-    
+
     -- Add UNIQUE constraint if not exists
     IF NOT EXISTS (
         SELECT 1 FROM pg_constraint c
