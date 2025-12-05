@@ -79,12 +79,12 @@ async def create_classifications(
     Do not include any explanation or punctuation."""
 
         response = await client.chat(prompt, temperature=0.3, max_tokens=50)
-        category_name = response.choices[0].message.content.strip()
+        category_name = response.choices[0].message.content
         if not category_name:
             category_name = f"Document Type {cluster_id}"
 
-        classification_names.append(category_name)
-        print(f"  → Named: {category_name}")
+        classification_names.append(category_name.strip())
+        print(f"  → Named: {category_name.strip()}")
 
     # Handle outliers individually
     for i, file in enumerate(outliers):
@@ -100,10 +100,10 @@ async def create_classifications(
 
         try:
             response = await client.chat(prompt, temperature=0.3, max_tokens=50)
-            category_name = response.choices[0].message.content.strip()
+            category_name = response.choices[0].message.content
             if category_name:
-                classification_names.append(category_name)
-                print(f"  → Outlier named: {category_name}")
+                classification_names.append(category_name.strip())
+                print(f"  → Outlier named: {category_name.strip()}")
             else:
                 fallback_name = f"Document Type Outlier {i}"
                 classification_names.append(fallback_name)
