@@ -66,7 +66,7 @@ async def create_classifications(
         sample_texts = []
         for file in files_in_cluster[:5]:
             text = _extract_text_from_file(file)
-            sample_texts.append(text[:500])  # Limit text length
+            sample_texts.append(text)
 
         # Use LLM to name the cluster
         prompt = f"""Analyze these similar documents and provide a single, concise classification name.
@@ -78,7 +78,7 @@ async def create_classifications(
     What type of documents are these? Respond with ONLY the category name.
     Do not include any explanation or punctuation."""
 
-        response = await client.chat(prompt, temperature=0.3, max_tokens=50)
+        response = await client.chat(prompt)
         category_name = response.choices[0].message.content
         if not category_name:
             category_name = f"Document Type {cluster_id}"
@@ -87,31 +87,31 @@ async def create_classifications(
         print(f"  → Named: {category_name.strip()}")
 
     # Handle outliers individually
-    for i, file in enumerate(outliers):
-        print(f"Analyzing outlier {i} (single file)...")
-        text = _extract_text_from_file(file)
-        prompt = f"""Analyze this document and provide a concise classification name.
+    # for i, file in enumerate(outliers):
+    #     print(f"Analyzing outlier {i} (single file)...")
+    #     text = _extract_text_from_file(file)
+    #     prompt = f"""Analyze this document and provide a concise classification name.
 
-    Document:
+    # Document:
 
-    {text}
+    # {text}
 
-    Respond with ONLY the category name."""
+    # Respond with ONLY the category name."""
 
-        try:
-            response = await client.chat(prompt, temperature=0.3, max_tokens=50)
-            category_name = response.choices[0].message.content
-            if category_name:
-                classification_names.append(category_name.strip())
-                print(f"  → Outlier named: {category_name.strip()}")
-            else:
-                fallback_name = f"Document Type Outlier {i}"
-                classification_names.append(fallback_name)
-                print(f"  → Outlier named: {fallback_name}")
-        except Exception as e:
-            print(f"  → Error naming outlier: {e}")
-            fallback_name = f"Document Type Outlier {i}"
-            print(f"  → Outlier named: {fallback_name}")
+    #     try:
+    #         response = await client.chat(prompt)
+    #         category_name = response.choices[0].message.content
+    #         if category_name:
+    #             classification_names.append(category_name.strip())
+    #             print(f"  → Outlier named: {category_name.strip()}")
+    #         else:
+    #             fallback_name = f"Document Type Outlier {i}"
+    #             classification_names.append(fallback_name)
+    #             print(f"  → Outlier named: {fallback_name}")
+    #     except Exception as e:
+    #         print(f"  → Error naming outlier: {e}")
+    #         fallback_name = f"Document Type Outlier {i}"
+    #         print(f"  → Outlier named: {fallback_name}")
 
     all_classifications = classification_names + initialClassifications
     final_classifications = list(set(all_classifications))

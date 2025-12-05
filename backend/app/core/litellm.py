@@ -92,7 +92,6 @@ class LLMClient:
         self,
         content: str,
         pdf_bytes: bytes | None = None,
-        temperature: float = 0.7,
         max_tokens: int | None = None,
         json_response: bool = False,
     ) -> ModelResponse:
@@ -102,7 +101,6 @@ class LLMClient:
         Args:
             content: Text prompt/question
             pdf_bytes: Optional PDF file bytes
-            temperature: Sampling temperature (0-2), default 0.7
             max_tokens: Max tokens to generate
             json_response: Force JSON output format
 
@@ -136,7 +134,6 @@ class LLMClient:
         return await acompletion(
             model=self.model.value,
             messages=messages,
-            temperature=temperature,
             max_tokens=max_tokens,
             response_format={"type": "json_object"} if json_response else None,
         )
