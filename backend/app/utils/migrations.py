@@ -268,12 +268,17 @@ CREATE TABLE IF NOT EXISTS "{schema_name}"."{table_name}" (
         return rel_type.upper(), from_table, to_table
 
     existing_relationships: set[tuple[str, str, str]] = set()
+    relationships_on_dropped_tables: set[tuple[str, str, str]] = set()
     for m in initial_migrations:
         parsed = _parse_relationship_migration_name(m.name)
         if not parsed:
             continue
         rel_type, from_table, to_table = parsed
-        if from_table in active_tables and to_table in active_tables:
+        # Track relationships where at least one table is being dropped
+        if from_table in tables_to_drop or to_table in tables_to_drop:
+            relationships_on_dropped_tables.add(parsed)
+        # Only consider relationships between still-active tables for normal diffing
+        elif from_table in active_tables and to_table in active_tables:
             existing_relationships.add(parsed)
 
     desired_relationships: set[tuple[str, str, str]] = set()
@@ -290,6 +295,8 @@ CREATE TABLE IF NOT EXISTS "{schema_name}"."{table_name}" (
         desired_relationships.add((rel_type_norm, from_table, to_table))
 
     relationships_to_drop = existing_relationships - desired_relationships
+    # Also drop relationships where a table is being dropped (junction tables, FK columns)
+    relationships_to_drop |= relationships_on_dropped_tables
 
     for rel_type_norm, from_table, to_table in sorted(relationships_to_drop):
         mig_name = (
