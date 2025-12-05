@@ -100,6 +100,42 @@ export const useExecuteMigrations = () => {
   }
 }
 
+export interface LoadDataResponse {
+  status: string
+  tables_updated: string[]
+  message: string
+}
+
+export const useLoadData = () => {
+  const { currentTenant } = useAuth()
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (): Promise<LoadDataResponse> => {
+      if (!currentTenant) {
+        throw new Error('No tenant selected')
+      }
+
+      const { data } = await api.post(
+        `/migrations/load_data/${currentTenant.id}`
+      )
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.migrations.list(currentTenant?.id),
+      })
+    },
+  })
+
+  return {
+    loadData: mutation.mutateAsync,
+    isLoadingData: mutation.isPending,
+    loadDataError: mutation.error,
+    loadDataResponse: mutation.data,
+  }
+}
+
 export interface ConnectionUrlResponse {
   tenant_id: string
   schema_name: string
