@@ -8,14 +8,18 @@ from app.schemas.relationship_schemas import Relationship
 def _table_name_for_classification(c: Classification) -> str:
     """
     Deterministic mapping from classification name to SQL table name.
-    Removes spaces and special characters, keeps only alphanumeric.
-    Example: "Product Brochure/Leaflet" -> "productbrochureleaflet"
-    Example: "Robot Specifications" -> "robotspecifications"
+    Converts spaces and special characters to underscores, keeps only alphanumeric and underscores.
+    Example: "Product Brochure/Leaflet" -> "product_brochure_leaflet"
+    Example: "Robot Specifications" -> "robot_specifications"
     """
-    # Remove spaces and convert to lowercase
+    # Convert to lowercase
     name = c.name.lower()
-    # Keep only alphanumeric characters
-    name = "".join(char if char.isalnum() else "" for char in name)
+    # Replace non-alphanumeric characters with underscores
+    name = "".join(char if char.isalnum() else "_" for char in name)
+    # Remove consecutive underscores and strip leading/trailing underscores
+    while "__" in name:
+        name = name.replace("__", "_")
+    name = name.strip("_")
 
     # Ensure it starts with a letter (not a number)
     if name and name[0].isdigit():
