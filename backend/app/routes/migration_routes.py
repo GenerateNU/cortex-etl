@@ -1,9 +1,12 @@
+from collections import defaultdict
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
+from supabase._async.client import AsyncClient
 
 from app.core.dependencies import get_current_admin
-from app.schemas.classification_schemas import Classification
+from app.core.supabase import get_async_supabase
+from app.schemas.classification_schemas import Classification, ExtractedFile
 from app.schemas.migration_schemas import Migration, MigrationCreate
 from app.schemas.relationship_schemas import Relationship
 from app.services.classification_service import (
@@ -18,7 +21,7 @@ from app.services.relationship_service import (
     RelationshipService,
     get_relationship_service,
 )
-from app.utils.migrations import create_migrations
+from app.utils.migrations import _table_name_for_classification, create_migrations
 
 router = APIRouter(prefix="/migrations", tags=["Migrations"])
 
@@ -56,7 +59,6 @@ async def generate_migrations(
     Then insert the new migrations into the `migrations` table and return them.
     """
     try:
-        # 1) Load current state from DB
         classifications: list[
             Classification
         ] = await classification_service.get_classifications(tenant_id)
@@ -72,8 +74,6 @@ async def generate_migrations(
                 status_code=404, detail="No classifications found for tenant"
             )
 
-        # 2) Compute *new* migrations (pure function)
-        #    IMPORTANT: this should return list[MigrationCreate]
         new_migration_creates: list[MigrationCreate] = create_migrations(
             classifications=classifications,
             relationships=relationships,
@@ -81,10 +81,8 @@ async def generate_migrations(
         )
 
         if not new_migration_creates:
-            # Nothing new to add
             return []
 
-        # 3) Insert into DB and return the created migrations
         created: list[Migration] = []
         for m in new_migration_creates:
             new_id = await migration_service.create_migration(m)
@@ -122,6 +120,78 @@ async def execute_migrations(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
+@router.post("/load_data/{tenant_id}")
+async def load_data_for_tenant(
+    tenant_id: UUID,
+    classification_service: ClassificationService = Depends(get_classification_service),
+    supabase: AsyncClient = Depends(get_async_supabase),
+    admin=Depends(get_current_admin),
+) -> dict:
+    """
+    Full data sync for a tenant:
+
+    - Fetch all extracted files + their classifications
+    - Group by classification
+    - For each classification:
+        * derive table name (same as migrations)
+        * DELETE existing rows for that tenant
+        * INSERT rows for each file in that classification
+    """
+    try:
+        extracted_files: list[
+            ExtractedFile
+        ] = await classification_service.get_extracted_files(tenant_id)
+
+        if not extracted_files:
+            return {
+                "status": "ok",
+                "tables_updated": [],
+                "message": "No extracted files found",
+            }
+
+        files_by_class_id: dict[UUID, list[ExtractedFile]] = defaultdict(list)
+
+        for ef in extracted_files:
+            if ef.classification is None:
+                continue
+            files_by_class_id[ef.classification.classification_id].append(ef)
+
+        updated_tables: list[str] = []
+
+        for class_files in files_by_class_id.values():
+            classification = class_files[0].classification
+            table_name = _table_name_for_classification(classification)
+
+            await (
+                supabase.table(table_name)
+                .delete()
+                .eq("tenant_id", str(tenant_id))
+                .execute()
+            )
+
+            rows = [
+                {
+                    "id": str(f.extracted_file_id),
+                    "tenant_id": str(tenant_id),
+                    "data": f.extracted_data,
+                }
+                for f in class_files
+            ]
+
+            if rows:
+                await supabase.table(table_name).insert(rows).execute()
+
+            updated_tables.append(table_name)
+
+        return {
+            "status": "ok",
+            "tables_updated": updated_tables,
+            "message": "Data synced from extracted_files into generated tables",
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
 @router.get("/connection-url/{tenant_id}")
 async def get_tenant_connection_url(
     tenant_id: UUID,
@@ -130,15 +200,6 @@ async def get_tenant_connection_url(
 ) -> dict:
     """
     Get a PostgreSQL connection URL for a specific tenant.
-
-    This URL is scoped to only show the tenant's generated tables.
-
-    Query params:
-        include_public: If true, also include public schema (for shared tables)
-
-    Example:
-        GET /migrations/connection-url/{tenant_id}
-        GET /migrations/connection-url/{tenant_id}?include_public=true
     """
     from app.utils.tenant_connection import get_schema_name, get_tenant_connection_url
 
