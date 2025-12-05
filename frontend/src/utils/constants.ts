@@ -56,7 +56,8 @@ export const QUERY_KEYS = {
     lists: () => [...QUERY_KEYS.migrations.all(), 'list'] as const,
     list: (tenantId: string | undefined) =>
       [...QUERY_KEYS.migrations.lists(), tenantId] as const,
-    connectionUrl: () => [...QUERY_KEYS.migrations.all(), 'connection-url'] as const,
+    connectionUrl: () =>
+      [...QUERY_KEYS.migrations.all(), 'connection-url'] as const,
     connectionUrlDetail: (tenantId: string | undefined) =>
       [...QUERY_KEYS.migrations.connectionUrl(), tenantId] as const,
   },

@@ -8,12 +8,8 @@ interface LoadDataStepProps {
 }
 
 export const LoadDataStep: FC<LoadDataStepProps> = ({ onCompleted }) => {
-  const {
-    loadData,
-    isLoadingData,
-    loadDataError,
-    loadDataResponse,
-  } = useLoadData()
+  const { loadData, isLoadingData, loadDataError, loadDataResponse } =
+    useLoadData()
 
   const handleLoadData = async () => {
     await loadData()
@@ -39,10 +35,7 @@ export const LoadDataStep: FC<LoadDataStepProps> = ({ onCompleted }) => {
       </div>
 
       {loadDataError && (
-        <ErrorAlert
-          error={loadDataError}
-          title="Failed to load data"
-        />
+        <ErrorAlert error={loadDataError} title="Failed to load data" />
       )}
 
       {isLoadingData ? (
@@ -83,4 +76,3 @@ export const LoadDataStep: FC<LoadDataStepProps> = ({ onCompleted }) => {
     </div>
   )
 }
-
