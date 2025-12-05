@@ -8,9 +8,24 @@ from app.schemas.relationship_schemas import Relationship
 def _table_name_for_classification(c: Classification) -> str:
     """
     Deterministic mapping from classification name to SQL table name.
-    Example: "Robot Specifications" -> "robotspecifications"
+    Converts spaces and special characters to underscores, keeps only alphanumeric and underscores.
+    Example: "Product Brochure/Leaflet" -> "product_brochure_leaflet"
+    Example: "Robot Specifications" -> "robot_specifications"
     """
-    return c.name.replace(" ", "").lower()
+    # Convert to lowercase
+    name = c.name.lower()
+    # Replace non-alphanumeric characters with underscores
+    name = "".join(char if char.isalnum() else "_" for char in name)
+    # Remove consecutive underscores and strip leading/trailing underscores
+    while "__" in name:
+        name = name.replace("__", "_")
+    name = name.strip("_")
+
+    # Ensure it starts with a letter (not a number)
+    if name and name[0].isdigit():
+        name = "tbl_" + name
+
+    return name
 
 
 def _get_schema_name(tenant_id) -> str:
