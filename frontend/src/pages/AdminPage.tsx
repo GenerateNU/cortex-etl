@@ -125,15 +125,9 @@ export function AdminPage() {
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-4">
-          {activeStep === 0 && (
-            <ClassificationStep onCompleted={() => setActiveStep(1)} />
-          )}
-          {activeStep === 1 && (
-            <AssignClassificationsStep onCompleted={() => setActiveStep(2)} />
-          )}
-          {activeStep === 2 && (
-            <PatternRecognitionStep onCompleted={() => setActiveStep(3)} />
-          )}
+          {activeStep === 0 && <ClassificationStep />}
+          {activeStep === 1 && <AssignClassificationsStep />}
+          {activeStep === 2 && <PatternRecognitionStep />}
           {activeStep === 3 && <MigrationsStep />}
           {activeStep === 4 && <LoadDataStep />}
         </div>
@@ -151,7 +145,7 @@ export function AdminPage() {
             type="button"
             onClick={handleNext}
             disabled={!canGoNext || activeStep === steps.length - 1}
-            className="rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white disabled:bg-slate-700 disabled:text-slate-400"
+            className="rounded-md bg-primary-600 hover:bg-primary-700 px-4 py-2 text-sm font-medium text-white disabled:bg-slate-700 disabled:text-slate-400 transition-colors"
           >
             Next
           </button>
